@@ -13,6 +13,9 @@ y_pred_lines = file_pred.readlines()
 file_pred_bal5 = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_balance5/inferred-predicates/TRUSTS.txt", "r+")
 y_pred_lines5 = file_pred_bal5.readlines()
 
+file_pred_status = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_status/inferred-predicates/TRUSTS.txt", "r+")
+y_pred_lines_status = file_pred_status.readlines()
+
 def readfile(y_true_lines, y_pred_lines) :
     y_true = [] # y_obs
     y_pred = []
@@ -76,3 +79,19 @@ psl_balance_mae5 = maeCalc(obsArr5, predArr5)
 psl_balance_aupr5 = auprCalc(obsArr5, predArr5)
 print("MAE: ", psl_balance_mae5)
 print("AUPR: ", psl_balance_aupr5)
+
+print("Results for PSL-Status Model with 8 rules, priors.")
+obsStat, predStat = readfile( y_true_lines, y_pred_lines_status )
+# print(obsArr5, predArr5)
+psl_status_mae = maeCalc(obsStat, predStat)
+psl_status_aupr = auprCalc(obsStat, predStat)
+print("MAE: ", psl_status_mae)
+print("AUPR: ", psl_status_aupr)
+
+print("Results for PSL-Status Model with 8 rules, priors.")
+obsStatInv, predStatInv = readfile( y_true_lines, y_pred_lines_status_inv )
+# print(obsArr5, predArr5)
+psl_status_inv_mae = maeCalc(obsStatInv, predStatInv)
+psl_status_inv_aupr = auprCalc(obsStatInv, predStatInv)
+print("MAE: ", psl_status_inv_mae)
+print("AUPR: ", psl_status_inv_aupr)
