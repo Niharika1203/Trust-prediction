@@ -16,6 +16,9 @@ y_pred_lines5 = file_pred_bal5.readlines()
 file_pred_status = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_status/inferred-predicates/TRUSTS.txt", "r+")
 y_pred_lines_status = file_pred_status.readlines()
 
+file_pred_status = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_status_inv/inferred-predicates/TRUSTS.txt", "r+")
+y_pred_lines_status_inv  = file_pred_status.readlines()
+
 def readfile(y_true_lines, y_pred_lines) :
     y_true = [] # y_obs
     y_pred = []
