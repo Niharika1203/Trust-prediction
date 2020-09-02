@@ -69,7 +69,7 @@ def auprCalc(observed, predicted):
 
 print("*********************************************** \n")
 
-print("Results for PSL-BALANCE Model with 16 rules, priors and trust reciprocity.")
+print("Results for PSL-BALANCE Model with 16 rules and priors.")
 obsArr, predArr = readfile(y_true_lines, y_pred_lines)
 # print(obsArr, predArr)
 psl_balance_mae = maeCalc(obsArr, predArr)
@@ -78,13 +78,32 @@ print("MAE: ", psl_balance_mae)
 print("AUPR: ", psl_balance_aupr)
 
 print("*********************************************** \n")
-print("Results for PSL-BALANCE Model with 5 rules, priors and trust reciprocity.")
+
+print("Results for PSL-BALANCE Model with 16 rules, priors and trust reciprocity.")
+obsArr_recip, predArr_recip = readfile(y_true_lines, y_pred_lines_recip)
+# print(obsArr, predArr)
+psl_balance_recip_mae = maeCalc(obsArr_recip, predArr_recip)
+psl_balance_recip_aupr = auprCalc(obsArr_recip, predArr_recip)
+print("MAE: ", psl_balance_recip_mae)
+print("AUPR: ", psl_balance_recip_aupr)
+
+print("*********************************************** \n")
+print("Results for PSL-BALANCE Model with 5 rules, priors.")
 obsArr5, predArr5 = readfile( y_true_lines, y_pred_lines5 )
 # print(obsArr5, predArr5)
 psl_balance_mae5 = maeCalc(obsArr5, predArr5)
 psl_balance_aupr5 = auprCalc(obsArr5, predArr5)
 print("MAE: ", psl_balance_mae5)
 print("AUPR: ", psl_balance_aupr5)
+
+print("*********************************************** \n")
+print("Results for PSL-BALANCE Model with 5 rules, priors and trust reciprocity.")
+obsArr5_recip, predArr5_recip = readfile( y_true_lines, y_pred_lines5_recip )
+# print(obsArr5, predArr5)
+psl_balance_recip_mae5 = maeCalc(obsArr5_recip, predArr5_recip)
+psl_balance_recip_aupr5 = auprCalc(obsArr5_recip, predArr5_recip)
+print("MAE: ", psl_balance_recip_mae5)
+print("AUPR: ", psl_balance_recip_aupr5)
 
 print("*********************************************** \n")
 print("Results for PSL-Status Model with 8 rules and priors.")
