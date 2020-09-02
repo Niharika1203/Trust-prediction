@@ -6,7 +6,7 @@ from sklearn import metrics
 import collections
 import numpy as np
 file_true = open("/Users/niharika/Desktop/LINQS/Trust-prediction/data/trust-prediction/0/eval/trusts_truth.txt", "r+")
-file_pred = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli/inferred-predicates/TRUSTS.txt", "r+")
+file_pred = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_balance/inferred-predicates/TRUSTS.txt", "r+")
 y_true_lines = file_true.readlines()
 y_pred_lines = file_pred.readlines()
 
