@@ -1,0 +1,19 @@
+
+1.0: Knows(A, B) & Trusts(A, B) -> TrustWorthy(B) ^2
+1.0: Knows(A, B) & Trusts(A, B) -> Trusting(A) ^2
+1.0: Knows(A, B) & !Trusts(A, B) -> !TrustWorthy(B) ^2
+1.0: Knows(A, B) & !Trusts(A, B) -> !Trusting(A) ^2
+1.0: Knows(A, B) & Trusting(A) & TrustWorthy(B) -> Trusts(A, B) ^2
+1.0: Knows(A, B) & !Trusting(A) & !TrustWorthy(B) -> !Trusts(A, B) ^2
+//1.0: Knows(A, B) & Trusting(A) -> Trusts(A, B) ^2
+//1.0: Knows(A, B) & TrustWorthy(B) -> Trusts(A, B) ^2
+//1.0: Knows(A, B) & !Trusting(A) -> !Trusts(A, B) ^2
+//1.0: Knows(A, B) & !TrustWorthy(B) -> !Trusts(A, B) ^2
+
+// Priors
+// 1.0: Knows(A, B) & Knows(B, A) & Trusts(A, B) -> Trusts(B, A) ^2
+// 1.0: Knows(A, B) & Knows(B, A) & !Trusts(A, B) -> !Trusts(B, A) ^2
+
+// two-sided prior
+// 1.0: Knows(A, B) & Prior('0') -> Trusts(A, B) ^2
+// 1.0: Knows(A, B) & Trusts(A, B) -> Prior('0') ^2
