@@ -25,6 +25,18 @@ y_pred_lines_status = file_pred_status.readlines()
 file_pred_status_inv = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_status_inv/inferred-predicates/TRUSTS.txt", "r+")
 y_pred_lines_status_inv  = file_pred_status_inv.readlines()
 
+file_pred_cyclic = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_cyclic_noncyclic/inferred-predicates/TRUSTS.txt", "r+")
+y_pred_lines_cyclic = file_pred_cyclic.readlines()
+
+file_pred_cyclic_bnb = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_cyclic_noncyclic_b_unb/inferred-predicates/TRUSTS.txt", "r+")
+y_pred_lines_cyclic_bnb = file_pred_cyclic_bnb.readlines()
+
+file_pred_pers = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_personality /inferred-predicates/TRUSTS.txt", "r+")
+y_pred_lines_pers = file_pred_pers.readlines()
+
+file_pred_triad_pers = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_triad_personality/inferred-predicates/TRUSTS.txt", "r+")
+y_pred_lines_triad_pers = file_pred_triad_pers.readlines()
+
 def readfile(y_true_lines, y_pred_lines) :
     y_true = [] # y_obs
     y_pred = []
@@ -128,4 +140,36 @@ psl_status_inv_mae = maeCalc(obsStatInv, predStatInv)
 psl_status_inv_aupr = auprCalc(obsStatInv, predStatInv)
 print("MAE: ", psl_status_inv_mae)
 print("AUPR: ", psl_status_inv_aupr)
+print("*********************************************** \n")
+
+print("Results for PSL-cyclic non-cyclic Model with 6 balanced rules and priors.")
+obsArr7, predArr7 = readfile( y_true_lines, y_pred_lines_cyclic )
+psl_mae7 = maeCalc(obsArr7, predArr7)
+psl_aupr7 = auprCalc(obsArr7, predArr7)
+print("MAE: ", psl_mae7)
+print("AUPR: ", psl_aupr7)
+
+print("*********************************************** \n")
+print("Results for PSL-cyclic non-cyclic Model with 12 balanced and unbalanced rules and priors.")
+obsArr10, predArr10 = readfile( y_true_lines, y_pred_lines_cyclic_bnb )
+psl_mae10 = maeCalc(obsArr10, predArr10)
+psl_aupr10 = auprCalc(obsArr10, predArr10)
+print("MAE: ", psl_mae7)
+print("AUPR: ", psl_aupr7)
+
+print("*********************************************** \n")
+print("Results for PSL_personality model.")
+obsArr8, predArr8 = readfile( y_true_lines, y_pred_lines_pers )
+psl_mae8 = maeCalc(obsArr8, predArr8)
+psl_aupr8 = auprCalc(obsArr8, predArr8)
+print("MAE: ", psl_mae8)
+print("AUPR: ", psl_aupr8)
+
+print("*********************************************** \n")
+print("Results for PSL-PSL_personality Model with 16 triadic rules, priors.")
+obsArr9, predArr9 = readfile( y_true_lines, y_pred_lines_triad_pers )
+psl_mae9 = maeCalc(obsArr9, predArr9)
+psl_aupr9 = auprCalc(obsArr9, predArr9)
+print("MAE: ", psl_mae9)
+print("AUPR: ", psl_aupr9)
 print("*********************************************** \n")
