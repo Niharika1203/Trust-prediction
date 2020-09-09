@@ -33,7 +33,7 @@ y_pred_lines_cyclic = file_pred_cyclic.readlines()
 file_pred_cyclic_bnb = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_cyclic_noncyclic_b_unb/inferred-predicates/TRUSTS.txt", "r+")
 y_pred_lines_cyclic_bnb = file_pred_cyclic_bnb.readlines()
 
-file_pred_pers = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_personality /inferred-predicates/TRUSTS.txt", "r+")
+file_pred_pers = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_personality/inferred-predicates/TRUSTS.txt", "r+")
 y_pred_lines_pers = file_pred_pers.readlines()
 
 file_pred_triad_pers = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_triad_personality/inferred-predicates/TRUSTS.txt", "r+")

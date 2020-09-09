@@ -13,6 +13,6 @@ observations:
 targets:
   Trusts: ../data/trust-prediction/0/learn/trusts_target.txt
   Trusting: ../data/trust-prediction/0/learn/users_learn.txt
-  TrustWorthy: ../data/trust-prediction/0/learn/users_learn.txt
+  TrustWorthy: ../data/trust-prediction/0/learn/users_learnTW.txt
 truth:
   Trusts: ../data/trust-prediction/0/learn/trusts_truth.txt

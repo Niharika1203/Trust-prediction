@@ -9,9 +9,9 @@ readonly JAR_PATH="./psl-cli-${PSL_VERSION}.jar"
 readonly FETCH_DATA_SCRIPT='../data/fetchData.sh'
 readonly BASE_NAME='trust-prediction'
 
-readonly ADDITIONAL_PSL_OPTIONS='--int-ids'
+readonly ADDITIONAL_PSL_OPTIONS='--int-ids -D log4j.threshold=DEBUG -D random.seed=4'
 readonly ADDITIONAL_LEARN_OPTIONS='--learn'
-readonly ADDITIONAL_EVAL_OPTIONS='--infer --eval org.linqs.psl.evaluation.statistics.RankingEvaluator'
+readonly ADDITIONAL_EVAL_OPTIONS='--infer --eval org.linqs.psl.evaluation.statistics.RankingEvaluator --satisfaction'
 
 function main() {
    trap exit SIGINT
