@@ -7,36 +7,39 @@ from scipy.stats import kendalltau
 
 import collections
 import numpy as np
-file_true = open("/Users/niharika/Desktop/LINQS/Trust-prediction/data/trust-prediction/0/eval/trusts_truth.txt", "r+")
-file_pred = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_balance/inferred-predicates/TRUSTS.txt", "r+")
+
+models_direc = "/Users/niharika/Desktop/LINQS/Trust-prediction/"
+inferred_direc = "/inferred-predicates/TRUSTS.txt"
+file_true = open(models_direc +"data/trust-prediction/0/eval/trusts_truth.txt", "r+")
+file_pred = open(models_direc+"cli_balance"+inferred_direc , "r+")
 y_true_lines = file_true.readlines()
 y_pred_lines = file_pred.readlines()
 
-file_pred_bal5 = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_balance5/inferred-predicates/TRUSTS.txt", "r+")
+file_pred_bal5 = open(models_direc+"cli_balance5" + inferred_direc, "r+")
 y_pred_lines5 = file_pred_bal5.readlines()
 
-file_pred_recip = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_balance_recip/inferred-predicates/TRUSTS.txt", "r+")
+file_pred_recip = open(models_direc+"cli_balance_recip"  +inferred_direc, "r+")
 y_pred_lines_recip = file_pred_recip.readlines()
 
-file_pred_bal5_recip = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_balance5_recip/inferred-predicates/TRUSTS.txt", "r+")
+file_pred_bal5_recip = open(models_direc + "cli_balance5_recip"+ inferred_direc, "r+")
 y_pred_lines5_recip = file_pred_bal5_recip.readlines()
 
-file_pred_status = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_status/inferred-predicates/TRUSTS.txt", "r+")
+file_pred_status = open(models_direc + "cli_status" +inferred_direc, "r+")
 y_pred_lines_status = file_pred_status.readlines()
 
-file_pred_status_inv = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_status_inv/inferred-predicates/TRUSTS.txt", "r+")
+file_pred_status_inv = open(models_direc + "cli_status_inv" + inferred_direc, "r+")
 y_pred_lines_status_inv  = file_pred_status_inv.readlines()
 
-file_pred_cyclic = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_cyclic_noncyclic/inferred-predicates/TRUSTS.txt", "r+")
+file_pred_cyclic = open(models_direc + "cli_cyclic_noncyclic" + inferred_direc, "r+")
 y_pred_lines_cyclic = file_pred_cyclic.readlines()
 
-file_pred_cyclic_bnb = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_cyclic_noncyclic_b_unb/inferred-predicates/TRUSTS.txt", "r+")
+file_pred_cyclic_bnb = open(models_direc + "cli_cyclic_noncyclic_b_unb" +inferred_direc, "r+")
 y_pred_lines_cyclic_bnb = file_pred_cyclic_bnb.readlines()
 
-file_pred_pers = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_personality/inferred-predicates/TRUSTS.txt", "r+")
+file_pred_pers = open(models_direc + "cli_personality" + inferred_direc, "r+")
 y_pred_lines_pers = file_pred_pers.readlines()
 
-file_pred_triad_pers = open("/Users/niharika/Desktop/LINQS/Trust-prediction/cli_triad_personality/inferred-predicates/TRUSTS.txt", "r+")
+file_pred_triad_pers = open(models_direc + "cli_triad_personality" + inferred_direc, "r+")
 y_pred_lines_triad_pers = file_pred_triad_pers.readlines()
 
 def readfile(y_true_lines, y_pred_lines) :
