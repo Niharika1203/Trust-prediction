@@ -14,5 +14,6 @@ targets:
   Trusts: ../data/trust-prediction/0/eval/trusts_target.txt
   Trusting: ../data/trust-prediction/0/eval/users.txt
   TrustWorthy: ../data/trust-prediction/0/eval/usersTW.txt
+
 truth:
-  Trusts: ../data/trust-prediction/0/eval/trusts_truth.txt
+  Trusts: ../data/trust-prediction/0/eval/trusts_truth.txts
