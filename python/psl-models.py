@@ -7,7 +7,6 @@ from pslpython.predicate import Predicate
 from pslpython.rule import Rule
 from pathlib import Path
 
-
 # MODEL_NAME = 'psl-models'
 DATA_DIR = os.path.join('..', 'data/trust-prediction/')
 
@@ -26,9 +25,9 @@ def main():
     for split in SPLITS :
         predicate_dir = DATA_DIR + str(split) + "/eval"
         print(predicate_dir)
-        models = ["balance5" ,"balance5_recip", "balance_extended", "balance_extended_recip",
-            "cyclic_balanced" , "cyclic_bal_unbal" , "status" , "status_inv" ]
-
+        models = [ "personality"]
+        #"balance5" ,"balance5_recip", "balance_extended", "balance_extended_recip",
+        #    "cyclic_balanced" , "cyclic_bal_unbal" , "status" , "status_inv" ,
         for model_name in models :
             model = makeModel(model_name, predicate_dir)
             if model_name == "balance5" :
@@ -50,8 +49,8 @@ def main():
                 status_rules(model)
             elif model_name == "status_inv" :
                 status_rules(model, inv = True)
-            # elif model_name == "personality" :
-            #     personality_rules(model)
+            elif model_name == "personality" :
+                personality_rules(model)
             else :
                 print("No such model defined.")
             # Add Predicates
@@ -83,11 +82,13 @@ def makeModel(model_name, predicateDir, addPrior = True, square = True, sim = Fa
     Trusts.add_data_file(Partition.TARGETS, predicateDir+"/trusts_target.txt")
     Trusts.add_data_file(Partition.TRUTH, predicateDir+"/trusts_truth.txt")
 
-    # if model_name == "personality" :
-    #     Trusting = Predicate("Trusting", size = 1, closed=False)
-    #     TrustWorthy = Predicate("TrustWorthy", size=1, closed = False)
-    #     model.add_predicate(Trusting)
-    #     model.add_predicate(TrustWorthy)
+    if model_name == "personality" :
+        Trusting = Predicate("Trusting", size = 1, closed=False)
+        TrustWorthy = Predicate("TrustWorthy", size=1, closed = False)
+        model.add_predicate(Trusting)
+        model.add_predicate(TrustWorthy)
+        Trusting.add_data_file(Partition.TARGETS, predicateDir+ "/users.txt")
+        TrustWorthy.add_data_file(Partition.TARGETS, predicateDir+ "/usersTW.txt") 
 
     if addPrior :
         model.add_rule(Rule("1.0: Knows(A, B) & Prior('0') -> Trusts(A, B) ^2"))
@@ -175,10 +176,10 @@ def personality_rules(model) :
     model.add_rule(Rule("1.0: Knows(A, B) & !Trusts(A, B) -> !Trusting(A) ^2"))
     model.add_rule(Rule("1.0: Knows(A, B) & Trusting(A) & TrustWorthy(B) -> Trusts(A, B) ^2"))
     model.add_rule(Rule("1.0: Knows(A, B) & !Trusting(A) & !TrustWorthy(B) -> !Trusts(A, B) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Trusting(A) -> Trusts(A, B) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & TrustWorthy(B) -> Trusts(A, B) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & !Trusting(A) -> !Trusts(A, B) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & !TrustWorthy(B) -> !Trusts(A, B) ^2"))
+    # model.add_rule(Rule("1.0: Knows(A, B) & Trusting(A) -> Trusts(A, B) ^2"))
+    # model.add_rule(Rule("1.0: Knows(A, B) & TrustWorthy(B) -> Trusts(A, B) ^2"))
+    # model.add_rule(Rule("1.0: Knows(A, B) & !Trusting(A) -> !Trusts(A, B) ^2"))
+    # model.add_rule(Rule("1.0: Knows(A, B) & !TrustWorthy(B) -> !Trusts(A, B) ^2"))
 # def add_learn_data(model):
 #     _add_data('learn', model)
 #
