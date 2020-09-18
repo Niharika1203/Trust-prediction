@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import auc
+from sklearn import metrics
+from scipy import stats
+from scipy.stats import kendalltau
+import collections
+import numpy as np
 import os
 from pslpython.model import Model
 from pslpython.partition import Partition
@@ -25,8 +33,9 @@ def main():
     for data_split in SPLITS :
         # predicate_dir = DATA_DIR + str(split) + "/eval"
         # print(predicate_dir)
-        models = [ "balance5" ,"balance5_recip", "balance_extended", "balance_extended_recip",
-          "status" , "status_inv" , "personality", "cyclic_balanced" , "cyclic_bal_unbal" , ]
+        models = [ "balance5" ]
+        #,"balance5_recip", "balance_extended", "balance_extended_recip",
+         # "status" , "status_inv" , "personality", "cyclic_balanced" , "cyclic_bal_unbal" , ]
 
         for model_name in models :
             model = makeModel(model_name)
@@ -68,6 +77,7 @@ def main():
             # Inference
             results = infer(model, str(data_split) , model_name)
             write_results(results, model, model_name)
+            evalute(model, str(data_split) , model_name)
 
 def makeModel(model_name, addPrior = True, square = True, sim = False):
     model = Model(model_name)
@@ -83,8 +93,6 @@ def makeModel(model_name, addPrior = True, square = True, sim = False):
         TrustWorthy = Predicate("TrustWorthy", size=1, closed = False)
         model.add_predicate(Trusting)
         model.add_predicate(TrustWorthy)
-
-    # if addPrior :
 
     return model
 
@@ -221,6 +229,75 @@ def personality_rules(model) :
 def infer(model, datasplit, model_name):
     add_eval_data(model, datasplit, model_name)
     return model.infer(additional_cli_optons = ADDITIONAL_CLI_OPTIONS, psl_config = ADDITIONAL_PSL_OPTIONS)
+
+
+def evalute(model, datasplit, model_name):
+    inferred_direc = "/inferred-predicates/TRUSTS.txt"
+    models_direc = os.path.join(model_name)
+    truth_file = open(DATA_DIR + str(datasplit) + "/eval/trusts_truth.txt", "r+")
+    y_true_lines = truth_file.readlines()
+    file_pred = open(models_direc+inferred_direc, "r+")
+    y_pred_lines = file_pred.readlines()
+
+    def readfile(y_true_lines, y_pred_lines) :
+        y_true = [] # y_obs
+        y_pred = []
+        for line in y_true_lines :
+            trustee , trusting, value = line.split()
+            y_true.append([trustee, trusting, value])
+
+        for line in y_pred_lines :
+            trustee , trusting, value = line.split()
+            y_pred.append([trustee, trusting, value])
+
+        true_out = []
+        pred_out = []
+
+        for trustee, trusting, value in y_true :
+            true_out.append(value)
+            for pred_trustee, pred_trusting, pred_val in y_pred :
+                if pred_trustee == trustee and pred_trusting == trusting :
+                    pred_out.append(pred_val)
+
+        true_out = np.array(true_out, dtype=float)
+        pred_out = np.array(pred_out, dtype=float)
+        return (true_out, pred_out)
+
+    def maeCalc(observed, predicted):
+         mae = metrics.mean_absolute_error(observed, predicted)
+         return mae
+
+    def auprCalc(observed, predicted):
+        precision, recall, thresholds = precision_recall_curve(observed, predicted)
+        precision_recall = []
+        for i in range(len(precision)) :
+            precision_recall.append((precision[i],recall[i]))
+        precision_recall.sort(key = lambda x : x[1])
+        precis = []
+        recal = []
+
+        for i,j in precision_recall :
+            precis.append(i)
+            recal.append(j)
+
+        aupr =  auc(recal, precis)
+        return aupr
+
+    eval_file = open(models_direc + model_name + "/evaluation_result.txt", "w+")
+    eval_file.write("Results for "+ model_name + "\n")
+    # print("Results for PSL-BALANCE Model with 16 rules and priors.")
+    obsArr, predArr = readfile(y_true_lines, y_pred_lines)
+    # print(obsArr, predArr)
+    psl_balance_mae = maeCalc(obsArr, predArr)
+    psl_balance_aupr = auprCalc(obsArr, predArr)
+    correlation, rank = stats.spearmanr(obsArr, predArr)
+    coef, p = kendalltau(obsArr, predArr)
+    eval_file.write("MAE: "+ str(psl_balance_mae) + " \n")
+    eval_file.write("AUPR: " + str(psl_balance_aupr) + " \n")
+    eval_file.write("Spearman Rank Coeff: "+ str(correlation) + " \n")
+    eval_file.write("Kendall Tau Coeff: " + str(coef) + " \n")
+    eval_file.close()
+
 
 if (__name__ == '__main__'):
     main()
