@@ -4,10 +4,10 @@ import os
 
 file = pd.read_csv("../data/trust-prediction/0/eval/knows_obs.txt", sep ="\t", names = ["U1","U2", "trust"])
 users = open("../data/trust-prediction/0/eval/users.txt", "w")
-users2 = open("../data/trust-prediction/0/learn/users_learn.txt", "w")
+users2 = open("../data/trust-prediction/0/learn/users.txt", "w")
 
 users3 = open("../data/trust-prediction/0/eval/usersTW.txt", "w")
-users4 = open("../data/trust-prediction/0/learn/users_learnTW.txt", "w")
+users4 = open("../data/trust-prediction/0/learn/usersTW.txt", "w")
 
 set = set()
 for index, row in file.iterrows() :
