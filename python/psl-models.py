@@ -34,7 +34,7 @@ def main():
         # print(predicate_dir)
         # models = ["balance5"]
         models = [ "balance5", "balance5_recip", "balance_extended", "balance_extended_recip",
-          "status" , "status_inv" , "personality"] # "cyclic_balanced" , "cyclic_bal_unbal"  ]
+          "status" , "status_inv" , "personality", "cyclic_balanced" , "cyclic_bal_unbal"  ]
 
         for model_name in models :
             model = makeModel(model_name)
