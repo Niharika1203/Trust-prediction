@@ -15,23 +15,22 @@ from pslpython.predicate import Predicate
 from pslpython.rule import Rule
 from pathlib import Path
 
-# MODEL_NAME = 'psl-models'
 DATA_DIR = os.path.join('..', 'data/trust-prediction/')
 
 ADDITIONAL_PSL_OPTIONS = {
     'log4j.threshold': 'DEBUG'
 }
 
-SPLITS = [0,1, 2,3,4,5,6,7]
+SPLITS = [0,1,2,3,4,5,6,7]
 ADDITIONAL_CLI_OPTIONS = [
      '--postgres'
 ]
 
 def main():
-    # model = Model(MODEL_NAME)
+    diction = {}
+    final_output = open("result.txt", "w+")
+
     for data_fold in SPLITS :
-        # predicate_dir = DATA_DIR + str(split) + "/eval"
-        # print(predicate_dir)
         # models = ["balance5"]
         models = [ "balance5", "balance5_recip", "balance_extended", "balance_extended_recip",
           "status" , "status_inv" , "personality", "cyclic_balanced" , "cyclic_bal_unbal"  ]
@@ -76,7 +75,23 @@ def main():
             # Inference
             results = infer(model, str(data_fold) , model_name)
             write_results(results, model, model_name, str(data_fold))
-            evalute(model, str(data_fold) , model_name)
+            outList = evalute(model, str(data_fold) , model_name)
+            if model_name not in diction :
+                diction[model_name] = [0] * 4
+            for i in range(4) :
+                diction[model_name][i] += outList[i]
+
+    for model, lst in diction.items() :
+        for i in range(4) :
+            diction[model][i] /= 8
+
+    for model, out in diction.items() :
+        final_output.write(model + "\n")
+        final_output.write("Average MAE: " + str(out[0]) + "\n")
+        final_output.write("Average AUPR: " + str(out[1]) + "\n")
+        final_output.write("Average Rho: " + str(out[2]) + "\n")
+        final_output.write("Average Tau: " + str(out[3]) + "\n")
+
 
 def makeModel(model_name, addPrior = True, square = True, sim = False):
     model = Model(model_name)
@@ -283,9 +298,7 @@ def evalute(model, data_fold, model_name):
     eval_file = open(evalDir + "/evaluation_result.txt", "w+")
 
     eval_file.write("Results for "+ model_name + "\n")
-    # print("Results for PSL-BALANCE Model with 16 rules and priors.")
     obsArr, predArr = readfile(y_true_lines, y_pred_lines)
-    # print(obsArr, predArr)
     psl_balance_mae = maeCalc(obsArr, predArr)
     psl_balance_aupr = auprCalc(obsArr, predArr)
     correlation, rank = stats.spearmanr(obsArr, predArr)
@@ -295,6 +308,8 @@ def evalute(model, data_fold, model_name):
     eval_file.write("Spearman Rank Coeff: "+ str(correlation) + " \n")
     eval_file.write("Kendall Tau Coeff: " + str(coef) + " \n")
     eval_file.close()
+    evalList = [psl_balance_mae] + [psl_balance_aupr] + [correlation] + [coef]
+    return evalList
 
 if (__name__ == '__main__'):
     main()
