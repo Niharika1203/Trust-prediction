@@ -144,7 +144,7 @@ def _add_data(split, model, data_fold, model_name):
 
 def learn(model, data_fold, model_name):
     add_learn_data(model, data_fold, model_name)
-    model.learn(additional_cli_optons = ADDITIONAL_CLI_OPTIONS, psl_config = ADDITIONAL_PSL_OPTIONS)
+    model.learn(additional_cli_options = ADDITIONAL_CLI_OPTIONS, psl_config = ADDITIONAL_PSL_OPTIONS)
     return model
 
 def write_results(results, model, model_name, data_fold):
@@ -238,7 +238,7 @@ def personality_rules(model) :
 
 def infer(model, data_fold, model_name):
     add_eval_data(model, data_fold, model_name)
-    return model.infer(additional_cli_optons = ADDITIONAL_CLI_OPTIONS, psl_config = ADDITIONAL_PSL_OPTIONS)
+    return model.infer(additional_cli_options = ADDITIONAL_CLI_OPTIONS, psl_config = ADDITIONAL_PSL_OPTIONS)
 
 
 def evalute(model, data_fold, model_name):
