@@ -15,82 +15,88 @@ from pslpython.predicate import Predicate
 from pslpython.rule import Rule
 from pathlib import Path
 
-DATA_DIR = os.path.join('..', 'data/trust-prediction/')
 
 ADDITIONAL_PSL_OPTIONS = {
     'log4j.threshold': 'DEBUG'
 }
 
-SPLITS = [0,1,2,3,4,5,6,7]
+DATA_DIR = os.path.join('..', 'data/' )
+
+SPLITS = 8
 ADDITIONAL_CLI_OPTIONS = [
      '--postgres'
 ]
-
+# "film-trust/",
+datasets = [ "film-trust/", "trust-prediction/" ]
 def main():
-    diction = {}
-    final_output = open("result.txt", "w+")
+    for dataset in datasets :
+        evaluation_dict = {}
 
-    for data_fold in SPLITS :
-        # models = ["balance5"]
-        models = [ "balance5", "balance5_recip", "balance_extended", "balance_extended_recip",
-          "status" , "status_inv" , "personality", "cyclic_balanced" , "cyclic_bal_unbal"  ]
+        for data_fold in range(SPLITS) :
+            models = ["balance5"]
+            # models = [ "balance5", "balance5_recip", "balance_extended", "balance_extended_recip",
+            #   "status" , "status_inv" , "personality", "cyclic_balanced" , "cyclic_bal_unbal"  ]
 
-        for model_name in models :
-            model = makeModel(model_name)
-            if model_name == "balance5" :
-                balance5rules(model)
-            elif model_name == "balance5_recip" :
-                balance5rules(model, recip = True)
-            elif model_name == "balance_extended" :
-                balance5rules(model)
-                balanceExtended(model)
-            elif model_name == "balance_extended_recip" :
-                balance5rules(model, recip = True)
-                balanceExtended(model)
-            elif model_name == "cyclic_balanced" :
-                cyclic_bal_rules(model)
-            elif model_name == "cyclic_bal_unbal" :
-                cyclic_bal_rules(model, unbalanced = True)
-            elif model_name == "status" :
-                status_rules(model)
-            elif model_name == "status_inv" :
-                status_rules(model, inv = True)
-            elif model_name == "personality" :
-                personality_rules(model)
-            else :
-                print("No such model defined.")
+            for model_name in models :
+                model = makeModel(model_name)
+                if model_name == "balance5" :
+                    balance5rules(model)
+                elif model_name == "balance5_recip" :
+                    balance5rules(model, recip = True)
+                elif model_name == "balance_extended" :
+                    balance5rules(model)
+                    balanceExtended(model)
+                elif model_name == "balance_extended_recip" :
+                    balance5rules(model, recip = True)
+                    balanceExtended(model)
+                elif model_name == "cyclic_balanced" :
+                    cyclic_bal_rules(model)
+                elif model_name == "cyclic_bal_unbal" :
+                    cyclic_bal_rules(model, unbalanced = True)
+                elif model_name == "status" :
+                    status_rules(model)
+                elif model_name == "status_inv" :
+                    status_rules(model, inv = True)
+                elif model_name == "personality" :
+                    personality_rules(model)
+                else :
+                    print("No such model defined.")
 
 
-            print('Rules defined:')
-            for rule in model.get_rules():
-                print('   ' + str(rule))
+                print('Rules defined:')
+                for rule in model.get_rules():
+                    print('   ' + str(rule))
 
-            # Weight Learning
-            model = learn(model, str(data_fold) , model_name)
+                # Weight Learning
+                model = learn(model, str(data_fold) , model_name, dataset)
 
-            print('Learned Rules:')
-            for rule in model.get_rules():
-                print('   ' + str(rule))
+                print('Learned Rules:')
+                for rule in model.get_rules():
+                    print('   ' + str(rule))
 
-            # Inference
-            results = infer(model, str(data_fold) , model_name)
-            write_results(results, model, model_name, str(data_fold))
-            outList = evalute(model, str(data_fold) , model_name)
-            if model_name not in diction :
-                diction[model_name] = [0] * 4
+                # Inference
+                results = infer(model, str(data_fold) , model_name, dataset)
+
+                write_results(results, model, model_name, str(data_fold), dataset)
+
+                outList = evalute(model, str(data_fold) , model_name, dataset)
+                if model_name not in evaluation_dict :
+                    evaluation_dict[model_name] = [0] * 4
+                for i in range(4) :
+                    evaluation_dict[model_name][i] += outList[i]
+
+        dataset_direc = os.path.join(dataset)
+        final_output = open( dataset_direc + "result.txt", "w+")
+        for model, lst in evaluation_dict.items() :
             for i in range(4) :
-                diction[model_name][i] += outList[i]
+                evaluation_dict[model][i] /= SPLITS
 
-    for model, lst in diction.items() :
-        for i in range(4) :
-            diction[model][i] /= 8
-
-    for model, out in diction.items() :
-        final_output.write(model + "\n")
-        final_output.write("Average MAE: " + str(out[0]) + "\n")
-        final_output.write("Average AUPR: " + str(out[1]) + "\n")
-        final_output.write("Average Rho: " + str(out[2]) + "\n")
-        final_output.write("Average Tau: " + str(out[3]) + "\n")
+        for model, out in evaluation_dict.items() :
+            final_output.write(model + "\n")
+            final_output.write("Average MAE: " + str(out[0]) + "\n")
+            final_output.write("Average AUPR: " + str(out[1]) + "\n")
+            final_output.write("Average Rho: " + str(out[2]) + "\n")
+            final_output.write("Average Tau: " + str(out[3]) + "\n")
 
 
 def makeModel(model_name, addPrior = True, square = True, sim = False):
@@ -110,14 +116,14 @@ def makeModel(model_name, addPrior = True, square = True, sim = False):
 
     return model
 
-def add_learn_data(model, data_fold, model_name):
-    _add_data('learn', model, data_fold, model_name)
+def add_learn_data(model, data_fold, model_name, dataset):
+    _add_data('learn', model, data_fold, model_name, dataset)
 
-def add_eval_data(model, data_fold, model_name):
-    _add_data('eval', model, data_fold, model_name )
+def add_eval_data(model, data_fold, model_name, dataset):
+    _add_data('eval', model, data_fold, model_name, dataset )
 
-def _add_data(split, model, data_fold, model_name):
-    split_data_dir = os.path.join(DATA_DIR, data_fold, split)
+def _add_data(split, model, data_fold, model_name, dataset):
+    split_data_dir = os.path.join(DATA_DIR,dataset, data_fold, split)
     for predicate in model.get_predicates().values():
         predicate.clear_data()
 
@@ -142,13 +148,13 @@ def _add_data(split, model, data_fold, model_name):
         path = os.path.join(split_data_dir, 'trustworthy.txt')
         model.get_predicate('TrustWorthy').add_data_file(Partition.TARGETS, path)
 
-def learn(model, data_fold, model_name):
-    add_learn_data(model, data_fold, model_name)
+def learn(model, data_fold, model_name, dataset):
+    add_learn_data(model, data_fold, model_name, dataset)
     model.learn(additional_cli_options = ADDITIONAL_CLI_OPTIONS, psl_config = ADDITIONAL_PSL_OPTIONS)
     return model
 
-def write_results(results, model, model_name, data_fold):
-    out_dir = model_name + "/"+ data_fold + '/inferred-predicates'
+def write_results(results, model, model_name, data_fold, dataset):
+    out_dir = dataset + "/" + model_name + "/"+ data_fold + '/inferred-predicates'
     os.makedirs(out_dir, exist_ok = True)
 
     for predicate in model.get_predicates().values():
@@ -236,15 +242,15 @@ def personality_rules(model) :
     model.add_rule(Rule("1.0: Knows(A, B) & Prior('0') -> Trusts(A, B) ^2"))
     model.add_rule(Rule("1.0: Knows(A, B) & Trusts(A, B) -> Prior('0') ^2"))
 
-def infer(model, data_fold, model_name):
-    add_eval_data(model, data_fold, model_name)
+def infer(model, data_fold, model_name, dataset):
+    add_eval_data(model, data_fold, model_name, dataset)
     return model.infer(additional_cli_options = ADDITIONAL_CLI_OPTIONS, psl_config = ADDITIONAL_PSL_OPTIONS)
 
 
-def evalute(model, data_fold, model_name):
+def evalute(model, data_fold, model_name, dataset):
     inferred_direc = "/"+ str(data_fold) + "/inferred-predicates/TRUSTS.txt"
-    models_direc = os.path.join(model_name)
-    truth_file = open(DATA_DIR + str(data_fold) + "/eval/trusts_truth.txt", "r+")
+    models_direc = os.path.join(dataset, model_name)
+    truth_file = open(DATA_DIR + dataset + str(data_fold) + "/eval/trusts_truth.txt", "r+")
     y_true_lines = truth_file.readlines()
     file_pred = open(models_direc + inferred_direc, "r+")
     y_pred_lines = file_pred.readlines()
@@ -278,6 +284,8 @@ def evalute(model, data_fold, model_name):
          return mae
 
     def auprCalc(observed, predicted):
+        print(observed, predicted)
+        print(type(observed[0]))
         precision, recall, thresholds = precision_recall_curve(observed, predicted)
         precision_recall = []
         for i in range(len(precision)) :
@@ -300,7 +308,10 @@ def evalute(model, data_fold, model_name):
     eval_file.write("Results for "+ model_name + "\n")
     obsArr, predArr = readfile(y_true_lines, y_pred_lines)
     psl_balance_mae = maeCalc(obsArr, predArr)
-    psl_balance_aupr = auprCalc(obsArr, predArr)
+    if dataset == "film-trust" :
+        psl_balance_aupr = "N/A"
+    else :
+        psl_balance_aupr = auprCalc(obsArr, predArr)
     correlation, rank = stats.spearmanr(obsArr, predArr)
     coef, p = kendalltau(obsArr, predArr)
     eval_file.write("MAE: "+ str(psl_balance_mae) + " \n")
