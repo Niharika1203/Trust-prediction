@@ -5,3 +5,4 @@ papers/
 inferred-predicates/
 evaluation_result.txt
 predicate_mapping.txt
+*result.txt 

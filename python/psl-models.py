@@ -33,9 +33,9 @@ def main():
         evaluation_dict = {}
 
         for data_fold in range(SPLITS) :
-            models = ["balance5"]
-            # models = [ "balance5", "balance5_recip", "balance_extended", "balance_extended_recip",
-            #   "status" , "status_inv" , "personality", "cyclic_balanced" , "cyclic_bal_unbal"  ]
+            # models = ["balance5"]
+            models = [ "balance5", "balance5_recip", "balance_extended", "balance_extended_recip",
+              "status" , "status_inv" , "personality", "cyclic_balanced" , "cyclic_bal_unbal"  ]
 
             for model_name in models :
                 model = makeModel(model_name)
@@ -83,13 +83,17 @@ def main():
                 if model_name not in evaluation_dict :
                     evaluation_dict[model_name] = [0] * 4
                 for i in range(4) :
-                    evaluation_dict[model_name][i] += outList[i]
+                    if outList[i] == "N/A" :
+                        evaluation_dict[model_name][i]  = outList[i]
+                    else :
+                        evaluation_dict[model_name][i] += outList[i]
 
         dataset_direc = os.path.join(dataset)
         final_output = open( dataset_direc + "result.txt", "w+")
         for model, lst in evaluation_dict.items() :
             for i in range(4) :
-                evaluation_dict[model][i] /= SPLITS
+                if evaluation_dict[model][i] != "N/A" :
+                    evaluation_dict[model][i] /= SPLITS
 
         for model, out in evaluation_dict.items() :
             final_output.write(model + "\n")
@@ -284,8 +288,8 @@ def evalute(model, data_fold, model_name, dataset):
          return mae
 
     def auprCalc(observed, predicted):
-        print(observed, predicted)
-        print(type(observed[0]))
+        # print(observed, predicted)
+        # print(type(observed[0]))
         precision, recall, thresholds = precision_recall_curve(observed, predicted)
         precision_recall = []
         for i in range(len(precision)) :
@@ -308,7 +312,7 @@ def evalute(model, data_fold, model_name, dataset):
     eval_file.write("Results for "+ model_name + "\n")
     obsArr, predArr = readfile(y_true_lines, y_pred_lines)
     psl_balance_mae = maeCalc(obsArr, predArr)
-    if dataset == "film-trust" :
+    if dataset == "film-trust/" :
         psl_balance_aupr = "N/A"
     else :
         psl_balance_aupr = auprCalc(obsArr, predArr)
