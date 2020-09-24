@@ -27,7 +27,7 @@ ADDITIONAL_CLI_OPTIONS = [
      '--postgres'
 ]
 # "film-trust/", "trust-prediction/"
-datasets = [ "trust-prediction/"]
+datasets = [ "film-trust/", "trust-prediction/"]
 def main():
     for dataset in datasets :
         evaluation_dict = {}
