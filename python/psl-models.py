@@ -26,16 +26,17 @@ SPLITS = 8
 ADDITIONAL_CLI_OPTIONS = [
      '--postgres'
 ]
-# "film-trust/",
-datasets = [ "film-trust/", "trust-prediction/" ]
+# "film-trust/", "trust-prediction/"
+datasets = [ "trust-prediction/"]
 def main():
     for dataset in datasets :
         evaluation_dict = {}
 
         for data_fold in range(SPLITS) :
-            # models = ["balance5"]
+            # models = ["similarity"]
             models = [ "balance5", "balance5_recip", "balance_extended", "balance_extended_recip",
-              "status" , "status_inv" , "personality", "cyclic_balanced" , "cyclic_bal_unbal"  ]
+              "status" , "status_inv" , "personality", "cyclic_balanced" , "cyclic_bal_unbal" , "similarity",
+              "triad-similarity", "triad-personality", "personality-similarity", "triad-pers-sim" ]
 
             for model_name in models :
                 model = makeModel(model_name)
@@ -59,8 +60,23 @@ def main():
                     status_rules(model, inv = True)
                 elif model_name == "personality" :
                     personality_rules(model)
+                elif model_name == "similarity" and dataset == "film-trust/" :
+                    similarity(model)
+                elif model_name == "triad-similarity" and dataset == "film-trust/" :
+                    balance5rules(model)
+                    similarity(model, combination = True )
+                elif model_name == "triad-personality" and dataset == "film-trust/" :
+                    balance5rules(model)
+                    personality_rules(model, combination = True)
+                elif model_name == "personality-similarity" and dataset == "film-trust/" :
+                    similarity(model, combination = True)
+                    personality_rules(model)
+                elif model_name == "triad-pers-sim" and dataset == "film-trust/" :
+                    balance5rules(model)
+                    similarity(model, combination = True)
+                    personality_rules(model, combination = True)
                 else :
-                    print("No such model defined.")
+                    continue
 
 
                 print('Rules defined:')
@@ -112,11 +128,15 @@ def makeModel(model_name, addPrior = True, square = True, sim = False):
     model.add_predicate(Knows)
     model.add_predicate(Prior)
 
-    if model_name == "personality" :
+    if model_name in ["triad-personality", "personality-similarity", "triad-pers-sim", "personality"] :
         Trusting = Predicate("Trusting", size = 1, closed=False)
         TrustWorthy = Predicate("TrustWorthy", size=1, closed = False)
         model.add_predicate(Trusting)
         model.add_predicate(TrustWorthy)
+
+    if model_name in [ "similarity", "triad-similarity", "personality-similarity", "triad-pers-sim"] :
+        SameTastes = Predicate("SameTastes", size = 2, closed = True)
+        model.add_predicate(SameTastes)
 
     return model
 
@@ -146,11 +166,15 @@ def _add_data(split, model, data_fold, model_name, dataset):
     path = os.path.join(split_data_dir, 'trusts_truth.txt')
     model.get_predicate('Trusts').add_data_file(Partition.TRUTH, path)
 
-    if model_name == "personality":
+    if model_name in ["triad-personality", "personality-similarity", "triad-pers-sim", "personality"]:
         path = os.path.join(split_data_dir, 'trusting.txt')
         model.get_predicate('Trusting').add_data_file(Partition.TARGETS, path)
         path = os.path.join(split_data_dir, 'trustworthy.txt')
         model.get_predicate('TrustWorthy').add_data_file(Partition.TARGETS, path)
+
+    if model_name in [ "similarity", "triad-similarity", "personality-similarity", "triad-pers-sim"] :
+        path = os.path.join(split_data_dir, 'SameTastes.txt')
+        model.get_predicate('SameTastes').add_data_file(Partition.TARGETS, path)
 
 def learn(model, data_fold, model_name, dataset):
     add_learn_data(model, data_fold, model_name, dataset)
@@ -235,7 +259,7 @@ def status_rules(model, inv = False) :
         model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, A) & Trusts(A, B) -> !Trusts(B, A) ^2"))
         model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, A) & !Trusts(A, B) -> Trusts(B, A) ^2"))
 
-def personality_rules(model) :
+def personality_rules(model , combination = False) :
     model.add_rule(Rule("1.0: Knows(A, B) & Trusts(A, B) -> TrustWorthy(B) ^2"))
     model.add_rule(Rule("1.0: Knows(A, B) & Trusts(A, B) -> Trusting(A) ^2"))
     model.add_rule(Rule("1.0: Knows(A, B) & !Trusts(A, B) -> !TrustWorthy(B) ^2"))
@@ -243,8 +267,21 @@ def personality_rules(model) :
     model.add_rule(Rule("1.0: Knows(A, B) & Trusting(A) & TrustWorthy(B) -> Trusts(A, B) ^2"))
     model.add_rule(Rule("1.0: Knows(A, B) & !Trusting(A) & !TrustWorthy(B) -> !Trusts(A, B) ^2"))
 
-    model.add_rule(Rule("1.0: Knows(A, B) & Prior('0') -> Trusts(A, B) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Trusts(A, B) -> Prior('0') ^2"))
+    if not combination:
+        model.add_rule(Rule("1.0: Knows(A, B) & Prior('0') -> Trusts(A, B) ^2"))
+        model.add_rule(Rule("1.0: Knows(A, B) & Trusts(A, B) -> Prior('0') ^2"))
+
+def similarity(model, combination = False) :
+    if not combination:
+        model.add_rule(Rule("1.0: Knows(A, B) & Prior('0') -> Trusts(A, B) ^2"))
+        model.add_rule(Rule("1.0: Knows(A, B) & Trusts(A, B) -> Prior('0') ^2"))
+
+    model.add_rule(Rule("1.0: Knows(A, B) & SameTastes(A, B) & (A != B) -> Trusts(A, B) ^2"))
+    model.add_rule(Rule("1.0: Knows(A, B) & !SameTastes(A, B) & (A != B) -> !Trusts(A, B) ^2"))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(A, C) & Trusts(A, B) & SameTastes(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(A, C) ^2"))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(A, C) & !Trusts(A, B) & SameTastes(B, C) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C) ^2"))
+    model.add_rule(Rule("1.0: Knows(A, C) & Knows(A, B) & Knows(B, C) & Trusts(A, C) & SameTastes(A, B) & (A != B) & (B != C) & (A != C) -> Trusts(B, C) ^2"))
+    model.add_rule(Rule("1.0: Knows(A, C) & Knows(A, B) & Knows(B, C) & !Trusts(A, C) & SameTastes(A, B) & (A != B) & (B != C) & (A != C) -> !Trusts(B, C) ^2"))
 
 def infer(model, data_fold, model_name, dataset):
     add_eval_data(model, data_fold, model_name, dataset)
