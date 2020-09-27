@@ -33,7 +33,7 @@ def main():
         evaluation_dict = {}
 
         for data_fold in range(SPLITS) :
-            # models = ["similarity"]
+            # models = ["triad-personality"]
             models = [ "balance5", "balance5_recip", "balance_extended", "balance_extended_recip",
               "status" , "status_inv" , "personality", "cyclic_balanced" , "cyclic_bal_unbal" , "similarity",
               "triad-similarity", "triad-personality", "personality-similarity", "triad-pers-sim" ]
@@ -65,7 +65,7 @@ def main():
                 elif model_name == "triad-similarity" and dataset == "film-trust/" :
                     balance5rules(model)
                     similarity(model, combination = True )
-                elif model_name == "triad-personality" and dataset == "film-trust/" :
+                elif model_name == "triad-personality" :
                     balance5rules(model)
                     personality_rules(model, combination = True)
                 elif model_name == "personality-similarity" and dataset == "film-trust/" :
