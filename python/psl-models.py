@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
 
-from sklearn.metrics import precision_recall_curve
-from sklearn.metrics import mean_absolute_error
-from sklearn.metrics import auc
-from sklearn import metrics
-from scipy import stats
-from scipy.stats import kendalltau
 import collections
 import numpy as np
 import os
@@ -27,7 +21,7 @@ ADDITIONAL_CLI_OPTIONS = [
      '--postgres'
 ]
 # "film-trust/", "trust-prediction/"
-datasets = [ "film-trust/", "trust-prediction/"]
+datasets = [ "trust-prediction/",  "film-trust/"]
 def main():
     for dataset in datasets :
         evaluation_dict = {}
@@ -94,30 +88,6 @@ def main():
                 results = infer(model, str(data_fold) , model_name, dataset)
 
                 write_results(results, model, model_name, str(data_fold), dataset)
-
-                outList = evalute(model, str(data_fold) , model_name, dataset)
-                if model_name not in evaluation_dict :
-                    evaluation_dict[model_name] = [0] * 4
-                for i in range(4) :
-                    if outList[i] == "N/A" :
-                        evaluation_dict[model_name][i]  = outList[i]
-                    else :
-                        evaluation_dict[model_name][i] += outList[i]
-
-        dataset_direc = os.path.join(dataset)
-        final_output = open( dataset_direc + "result.txt", "w+")
-        for model, lst in evaluation_dict.items() :
-            for i in range(4) :
-                if evaluation_dict[model][i] != "N/A" :
-                    evaluation_dict[model][i] /= SPLITS
-
-        for model, out in evaluation_dict.items() :
-            final_output.write(model + "\n")
-            final_output.write("Average MAE: " + str(out[0]) + "\n")
-            final_output.write("Average AUPR: " + str(out[1]) + "\n")
-            final_output.write("Average Rho: " + str(out[2]) + "\n")
-            final_output.write("Average Tau: " + str(out[3]) + "\n")
-
 
 def makeModel(model_name, addPrior = True, square = True, sim = False):
     model = Model(model_name)
@@ -278,90 +248,14 @@ def similarity(model, combination = False) :
 
     model.add_rule(Rule("1.0: Knows(A, B) & SameTastes(A, B) & (A != B) -> Trusts(A, B) ^2"))
     model.add_rule(Rule("1.0: Knows(A, B) & !SameTastes(A, B) & (A != B) -> !Trusts(A, B) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(A, C) & Trusts(A, B) & SameTastes(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(A, C) & !Trusts(A, B) & SameTastes(B, C) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, C) & Knows(A, B) & Knows(B, C) & Trusts(A, C) & SameTastes(A, B) & (A != B) & (B != C) & (A != C) -> Trusts(B, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, C) & Knows(A, B) & Knows(B, C) & !Trusts(A, C) & SameTastes(A, B) & (A != B) & (B != C) & (A != C) -> !Trusts(B, C) ^2"))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(A, C) & Trusts(A, B) & SameTastes(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(A, C) ^2"))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(A, C) & !Trusts(A, B) & SameTastes(B, C) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C) ^2"))
+    model.add_rule(Rule("1.0: Knows(A, C) & Knows(B, C) & Trusts(A, C) & SameTastes(A, B) & (A != B) & (B != C) & (A != C) -> Trusts(B, C) ^2"))
+    model.add_rule(Rule("1.0: Knows(A, C) & Knows(B, C) & !Trusts(A, C) & SameTastes(A, B) & (A != B) & (B != C) & (A != C) -> !Trusts(B, C) ^2"))
 
 def infer(model, data_fold, model_name, dataset):
     add_eval_data(model, data_fold, model_name, dataset)
     return model.infer(additional_cli_options = ADDITIONAL_CLI_OPTIONS, psl_config = ADDITIONAL_PSL_OPTIONS)
 
-
-def evalute(model, data_fold, model_name, dataset):
-    inferred_direc = "/"+ str(data_fold) + "/inferred-predicates/TRUSTS.txt"
-    models_direc = os.path.join(dataset, model_name)
-    truth_file = open(DATA_DIR + dataset + str(data_fold) + "/eval/trusts_truth.txt", "r+")
-    y_true_lines = truth_file.readlines()
-    file_pred = open(models_direc + inferred_direc, "r+")
-    y_pred_lines = file_pred.readlines()
-
-    def readfile(y_true_lines, y_pred_lines) :
-        y_true = []
-        y_pred = []
-        for line in y_true_lines :
-            trustee , trusting, value = line.split()
-            y_true.append([trustee, trusting, value])
-
-        for line in y_pred_lines :
-            trustee , trusting, value = line.split()
-            y_pred.append([trustee, trusting, value])
-
-        true_out = []
-        pred_out = []
-
-        for trustee, trusting, value in y_true :
-            true_out.append(value)
-            for pred_trustee, pred_trusting, pred_val in y_pred :
-                if pred_trustee == trustee and pred_trusting == trusting :
-                    pred_out.append(pred_val)
-
-        true_out = np.array(true_out, dtype=float)
-        pred_out = np.array(pred_out, dtype=float)
-        return (true_out, pred_out)
-
-    def maeCalc(observed, predicted):
-         mae = metrics.mean_absolute_error(observed, predicted)
-         return mae
-
-    def auprCalc(observed, predicted):
-        # print(observed, predicted)
-        # print(type(observed[0]))
-        precision, recall, thresholds = precision_recall_curve(observed, predicted)
-        precision_recall = []
-        for i in range(len(precision)) :
-            precision_recall.append((precision[i],recall[i]))
-        precision_recall.sort(key = lambda x : x[1])
-        precis = []
-        recal = []
-
-        for i,j in precision_recall :
-            precis.append(i)
-            recal.append(j)
-
-        aupr =  auc(recal, precis)
-        return aupr
-
-    evalDir = models_direc +"/" + str(data_fold)
-    os.makedirs(evalDir, exist_ok = True)
-    eval_file = open(evalDir + "/evaluation_result.txt", "w+")
-
-    eval_file.write("Results for "+ model_name + "\n")
-    obsArr, predArr = readfile(y_true_lines, y_pred_lines)
-    psl_balance_mae = maeCalc(obsArr, predArr)
-    if dataset == "film-trust/" :
-        psl_balance_aupr = "N/A"
-    else :
-        psl_balance_aupr = auprCalc(obsArr, predArr)
-    correlation, rank = stats.spearmanr(obsArr, predArr)
-    coef, p = kendalltau(obsArr, predArr)
-    eval_file.write("MAE: "+ str(psl_balance_mae) + " \n")
-    eval_file.write("AUPR: " + str(psl_balance_aupr) + " \n")
-    eval_file.write("Spearman Rank Coeff: "+ str(correlation) + " \n")
-    eval_file.write("Kendall Tau Coeff: " + str(coef) + " \n")
-    eval_file.close()
-    evalList = [psl_balance_mae] + [psl_balance_aupr] + [correlation] + [coef]
-    return evalList
-
-if (__name__ == '__main__'):
+if (__name__ == '__main__') :
     main()
