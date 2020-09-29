@@ -5,4 +5,5 @@ papers/
 inferred-predicates/
 evaluation_result.txt
 predicate_mapping.txt
-*result.txt 
+*result.txt
+old_eval.py
