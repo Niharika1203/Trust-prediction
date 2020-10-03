@@ -35,40 +35,40 @@ def main():
             for model_name in models :
                 model = makeModel(model_name)
                 if model_name == "balance5" :
-                    balance5rules(model)
+                    balance5rules(model, squared = False)
                 elif model_name == "balance5_recip" :
-                    balance5rules(model, recip = True)
+                    balance5rules(model, recip = True , squared = False )
                 elif model_name == "balance_extended" :
-                    balance5rules(model)
-                    balanceExtended(model)
+                    balance5rules(model, squared = False)
+                    balanceExtended(model, squared = False)
                 elif model_name == "balance_extended_recip" :
-                    balance5rules(model, recip = True)
-                    balanceExtended(model)
+                    balance5rules(model, recip = True, squared = False)
+                    balanceExtended(model, squared = False)
                 elif model_name == "cyclic_balanced" :
-                    cyclic_bal_rules(model)
+                    cyclic_bal_rules(model, squared = False)
                 elif model_name == "cyclic_bal_unbal" :
-                    cyclic_bal_rules(model, unbalanced = True)
+                    cyclic_bal_rules(model, unbalanced = True, squared = False)
                 elif model_name == "status" :
-                    status_rules(model)
+                    status_rules(model, squared = False)
                 elif model_name == "status_inv" :
-                    status_rules(model, inv = True)
+                    status_rules(model, inv = True, squared = False)
                 elif model_name == "personality" :
-                    personality_rules(model)
+                    personality_rules(model, squared = False)
                 elif model_name == "similarity" and dataset == "film-trust/" :
-                    similarity(model)
+                    similarity(model, squared = False)
                 elif model_name == "triad-similarity" and dataset == "film-trust/" :
-                    balance5rules(model)
-                    similarity(model, combination = True )
+                    balance5rules(model, squared = False)
+                    similarity(model, combination = True , squared = False)
                 elif model_name == "triad-personality" :
-                    balance5rules(model)
-                    personality_rules(model, combination = True)
+                    balance5rules(model, squared = False)
+                    personality_rules(model, combination = True, squared = False)
                 elif model_name == "personality-similarity" and dataset == "film-trust/" :
-                    similarity(model, combination = True)
-                    personality_rules(model)
+                    similarity(model, combination = True, squared = False)
+                    personality_rules(model, squared = False)
                 elif model_name == "triad-pers-sim" and dataset == "film-trust/" :
-                    balance5rules(model)
-                    similarity(model, combination = True)
-                    personality_rules(model, combination = True)
+                    balance5rules(model, squared = False)
+                    similarity(model, combination = True, squared = False)
+                    personality_rules(model, combination = True, squared = False)
                 else :
                     continue
 
@@ -89,7 +89,7 @@ def main():
 
                 write_results(results, model, model_name, str(data_fold), dataset)
 
-def makeModel(model_name, addPrior = True, square = True, sim = False):
+def makeModel(model_name, addPrior = True, sim = False):
     model = Model(model_name)
     Trusts = Predicate("Trusts", size=2, closed=False)
     Knows = Predicate("Knows", size=2, closed=True)
@@ -162,96 +162,96 @@ def write_results(results, model, model_name, data_fold, dataset):
         out_path = os.path.join(out_dir, "%s.txt" % (predicate.name()))
         results[predicate].to_csv(out_path, sep = "\t", header = False, index = False)
 
-def balance5rules(model, recip = False):
+def balance5rules(model, recip = False, squared = True):
 
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(A, C) & Trusts(A, B) & Trusts(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(A, C) & Trusts(A, B) & !Trusts(B, C) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(A, C) & !Trusts(A, B) & !Trusts(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(C, B) & Knows(A, C) & Trusts(A, B) & Trusts(C, B) & (A != B) & (B != C) & (A != C) -> Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(B, A) & Knows(B, C) & Knows(A, C) & Trusts(B, A) & Trusts(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(A, C) ^2"))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(A, C) & Trusts(A, B) & Trusts(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(A, C) & Trusts(A, B) & !Trusts(B, C) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(A, C) & !Trusts(A, B) & !Trusts(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(C, B) & Knows(A, C) & Trusts(A, B) & Trusts(C, B) & (A != B) & (B != C) & (A != C) -> Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(B, A) & Knows(B, C) & Knows(A, C) & Trusts(B, A) & Trusts(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(A, C)", squared = squared))
     # two-sided prior
-    model.add_rule(Rule("1.0: Knows(A, B) & Prior('0') -> Trusts(A, B) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Trusts(A, B) -> Prior('0') ^2"))
+    model.add_rule(Rule("1.0: Knows(A, B) & Prior('0') -> Trusts(A, B)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & Trusts(A, B) -> Prior('0')", squared = squared))
     if recip :
-        model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, A) & Trusts(A, B) -> Trusts(B, A) ^2"))
-        model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, A) & !Trusts(A, B) -> !Trusts(B, A) ^2"))
+        model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, A) & Trusts(A, B) -> Trusts(B, A)", squared = squared))
+        model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, A) & !Trusts(A, B) -> !Trusts(B, A)", squared = squared))
 
-def balanceExtended(model):
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(A, C) & !Trusts(A, B) & Trusts(B, C) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(C, B) & Knows(A, C) & Trusts(A, B) & !Trusts(C, B) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(C, B) & Knows(A, C) & !Trusts(A, B) & Trusts(C, B) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(C, B) & Knows(A, C) & !Trusts(A, B) & !Trusts(C, B) & (A != B) & (B != C) & (A != C) -> Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(B, A) & Knows(B, C) & Knows(A, C) & Trusts(B, A) & !Trusts(B, C) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(B, A) & Knows(B, C) & Knows(A, C) & !Trusts(B, A) & Trusts(B, C) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(B, A) & Knows(B, C) & Knows(A, C) & !Trusts(B, A) & !Trusts(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(B, A) & Knows(C, B) & Knows(A, C) & Trusts(B, A) & Trusts(C, B) & (A != B) & (B != C) & (A != C) -> Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(B, A) & Knows(C, B) & Knows(A, C) & Trusts(B, A) & !Trusts(C, B) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(B, A) & Knows(C, B) & Knows(A, C) & !Trusts(B, A) & Trusts(C, B) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(B, A) & Knows(C, B) & Knows(A, C) & !Trusts(B, A) & !Trusts(C, B) & (A != B) & (B != C) & (A != C) -> Trusts(A, C) ^2"))
+def balanceExtended(model, squared = True):
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(A, C) & !Trusts(A, B) & Trusts(B, C) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(C, B) & Knows(A, C) & Trusts(A, B) & !Trusts(C, B) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(C, B) & Knows(A, C) & !Trusts(A, B) & Trusts(C, B) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(C, B) & Knows(A, C) & !Trusts(A, B) & !Trusts(C, B) & (A != B) & (B != C) & (A != C) -> Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(B, A) & Knows(B, C) & Knows(A, C) & Trusts(B, A) & !Trusts(B, C) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(B, A) & Knows(B, C) & Knows(A, C) & !Trusts(B, A) & Trusts(B, C) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(B, A) & Knows(B, C) & Knows(A, C) & !Trusts(B, A) & !Trusts(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(B, A) & Knows(C, B) & Knows(A, C) & Trusts(B, A) & Trusts(C, B) & (A != B) & (B != C) & (A != C) -> Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(B, A) & Knows(C, B) & Knows(A, C) & Trusts(B, A) & !Trusts(C, B) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(B, A) & Knows(C, B) & Knows(A, C) & !Trusts(B, A) & Trusts(C, B) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(B, A) & Knows(C, B) & Knows(A, C) & !Trusts(B, A) & !Trusts(C, B) & (A != B) & (B != C) & (A != C) -> Trusts(A, C)", squared = squared))
 
-def cyclic_bal_rules(model, unbalanced = False) :
+def cyclic_bal_rules(model, unbalanced = False, squared = True) :
 
-    model.add_rule(Rule("1.0: Knows(A, B) & Prior('0') -> Trusts(A, B) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Trusts(A, B) -> Prior('0') ^2"))
+    model.add_rule(Rule("1.0: Knows(A, B) & Prior('0') -> Trusts(A, B)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & Trusts(A, B) -> Prior('0')", squared = squared))
 
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(C, A) & Trusts(A, B) & Trusts(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(C, A) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(C, A) & !Trusts(A, B) & !Trusts(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(C, A) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(A, C) & Knows(C, B) & Trusts(A,B) & Trusts(A,C) & (A != B) & (B != C) & (A != C) -> Trusts(C,B) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(A, C) & Knows(C, B) & Trusts(A,B) & !Trusts(A,C) & (A != B) & (B != C) & (A != C) -> !Trusts(C,B) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(A, C) & Knows(C, B) & !Trusts(A,B) & Trusts(A,C) & (A != B) & (B != C) & (A != C) -> !Trusts(C,B) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & knows(A, C) & knows(C, B) & !Trusts(A,B) & !Trusts(A,C) & (A != B) & (B != C) & (A != C) -> Trusts(C,B) ^2"))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(C, A) & Trusts(A, B) & Trusts(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(C, A)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(C, A) & !Trusts(A, B) & !Trusts(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(C, A)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(A, C) & Knows(C, B) & Trusts(A,B) & Trusts(A,C) & (A != B) & (B != C) & (A != C) -> Trusts(C,B)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(A, C) & Knows(C, B) & Trusts(A,B) & !Trusts(A,C) & (A != B) & (B != C) & (A != C) -> !Trusts(C,B)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(A, C) & Knows(C, B) & !Trusts(A,B) & Trusts(A,C) & (A != B) & (B != C) & (A != C) -> !Trusts(C,B)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & knows(A, C) & knows(C, B) & !Trusts(A,B) & !Trusts(A,C) & (A != B) & (B != C) & (A != C) -> Trusts(C,B)", squared = squared))
 
     if unbalanced :
-        model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(C, A) & Trusts(A, B) & !Trusts(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(C, A) ^2"))
-        model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(C, A) & Trusts(A, B) & Trusts(B, C) & (A != B) & (B != C) & (A != C) -> !Trusts(C, A) ^2"))
-        model.add_rule(Rule("1.0: Knows(A, B) & Knows(A, C) & Knows(C, B) & Trusts(A,B) & Trusts(A,C) & (A != B) & (B != C) & (A != C) -> !Trusts(C,B) ^2"))
-        model.add_rule(Rule("1.0: Knows(A, B) & Knows(A, C) & Knows(C, B) & Trusts(A,B) & !Trusts(A,C) & (A != B) & (B != C) & (A != C) -> Trusts(C,B) ^2"))
-        model.add_rule(Rule("1.0: Knows(A, B) & Knows(A, C) & Knows(C, B) & !Trusts(A,B) & Trusts(A,C) & (A != B) & (B != C) & (A != C) ->  Trusts(C,B) ^2"))
-        model.add_rule(Rule("1.0: Knows(A, B) & knows(A, C) & knows(C, B) & !Trusts(A,B) & !Trusts(A,C) & (A != B) & (B != C) & (A != C) -> !Trusts(C,B) ^2"))
+        model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(C, A) & Trusts(A, B) & !Trusts(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(C, A)", squared = squared))
+        model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(C, A) & Trusts(A, B) & Trusts(B, C) & (A != B) & (B != C) & (A != C) -> !Trusts(C, A)", squared = squared))
+        model.add_rule(Rule("1.0: Knows(A, B) & Knows(A, C) & Knows(C, B) & Trusts(A,B) & Trusts(A,C) & (A != B) & (B != C) & (A != C) -> !Trusts(C,B)", squared = squared))
+        model.add_rule(Rule("1.0: Knows(A, B) & Knows(A, C) & Knows(C, B) & Trusts(A,B) & !Trusts(A,C) & (A != B) & (B != C) & (A != C) -> Trusts(C,B)", squared = squared))
+        model.add_rule(Rule("1.0: Knows(A, B) & Knows(A, C) & Knows(C, B) & !Trusts(A,B) & Trusts(A,C) & (A != B) & (B != C) & (A != C) ->  Trusts(C,B)", squared = squared))
+        model.add_rule(Rule("1.0: Knows(A, B) & knows(A, C) & knows(C, B) & !Trusts(A,B) & !Trusts(A,C) & (A != B) & (B != C) & (A != C) -> !Trusts(C,B)", squared = squared))
 
 
-def status_rules(model, inv = False) :
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(A, C) & Trusts(A, B) & Trusts(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(A, C) & !Trusts(A, B) & !Trusts(B, C) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(C, B) & Knows(A, C) & Trusts(A, B) & !Trusts(C, B) & (A != B) & (B != C) & (A != C) -> Trusts(A, C) ^2"))
+def status_rules(model, inv = False, squared = True) :
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(A, C) & Trusts(A, B) & Trusts(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, C) & Knows(A, C) & !Trusts(A, B) & !Trusts(B, C) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(C, B) & Knows(A, C) & Trusts(A, B) & !Trusts(C, B) & (A != B) & (B != C) & (A != C) -> Trusts(A, C)", squared = squared))
 
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(C, B) & Knows(A, C) & !Trusts(A, B) & Trusts(C, B) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(B, A) & Knows(B, C) & Knows(A, C) & Trusts(B, A) & !Trusts(B, C) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(B, A) & Knows(B, C) & Knows(A, C) & !Trusts(B, A) & Trusts(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(A, C) ^2"))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(C, B) & Knows(A, C) & !Trusts(A, B) & Trusts(C, B) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(B, A) & Knows(B, C) & Knows(A, C) & Trusts(B, A) & !Trusts(B, C) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(B, A) & Knows(B, C) & Knows(A, C) & !Trusts(B, A) & Trusts(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(A, C)", squared = squared))
 
-    model.add_rule(Rule("1.0: Knows(B, A) & Knows(C, B) & Knows(A, C) & Trusts(B, A) & Trusts(C, B) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(B, A) & Knows(C, B) & Knows(A, C) & !Trusts(B, A) & !Trusts(C, B) & (A != B) & (B != C) & (A != C) -> Trusts(A, C) ^2"))
+    model.add_rule(Rule("1.0: Knows(B, A) & Knows(C, B) & Knows(A, C) & Trusts(B, A) & Trusts(C, B) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(B, A) & Knows(C, B) & Knows(A, C) & !Trusts(B, A) & !Trusts(C, B) & (A != B) & (B != C) & (A != C) -> Trusts(A, C)", squared = squared))
 
-    model.add_rule(Rule("1.0: Knows(A, B) & Prior('0') -> Trusts(A, B) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Trusts(A, B) -> Prior('0') ^2"))
+    model.add_rule(Rule("1.0: Knows(A, B) & Prior('0') -> Trusts(A, B)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & Trusts(A, B) -> Prior('0')", squared = squared))
 
     if inv :
-        model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, A) & Trusts(A, B) -> !Trusts(B, A) ^2"))
-        model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, A) & !Trusts(A, B) -> Trusts(B, A) ^2"))
+        model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, A) & Trusts(A, B) -> !Trusts(B, A)", squared = squared))
+        model.add_rule(Rule("1.0: Knows(A, B) & Knows(B, A) & !Trusts(A, B) -> Trusts(B, A)", squared = squared))
 
-def personality_rules(model , combination = False) :
-    model.add_rule(Rule("1.0: Knows(A, B) & Trusts(A, B) -> TrustWorthy(B) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Trusts(A, B) -> Trusting(A) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & !Trusts(A, B) -> !TrustWorthy(B) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & !Trusts(A, B) -> !Trusting(A) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Trusting(A) & TrustWorthy(B) -> Trusts(A, B) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & !Trusting(A) & !TrustWorthy(B) -> !Trusts(A, B) ^2"))
+def personality_rules(model , combination = False, squared = True) :
+    model.add_rule(Rule("1.0: Knows(A, B) & Trusts(A, B) -> TrustWorthy(B)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & Trusts(A, B) -> Trusting(A)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & !Trusts(A, B) -> !TrustWorthy(B)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & !Trusts(A, B) -> !Trusting(A)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & Trusting(A) & TrustWorthy(B) -> Trusts(A, B)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & !Trusting(A) & !TrustWorthy(B) -> !Trusts(A, B)", squared = squared))
 
     if not combination:
-        model.add_rule(Rule("1.0: Knows(A, B) & Prior('0') -> Trusts(A, B) ^2"))
-        model.add_rule(Rule("1.0: Knows(A, B) & Trusts(A, B) -> Prior('0') ^2"))
+        model.add_rule(Rule("1.0: Knows(A, B) & Prior('0') -> Trusts(A, B)", squared = squared))
+        model.add_rule(Rule("1.0: Knows(A, B) & Trusts(A, B) -> Prior('0')", squared = squared))
 
-def similarity(model, combination = False) :
+def similarity(model, combination = False, squared = True) :
     if not combination:
-        model.add_rule(Rule("1.0: Knows(A, B) & Prior('0') -> Trusts(A, B) ^2"))
-        model.add_rule(Rule("1.0: Knows(A, B) & Trusts(A, B) -> Prior('0') ^2"))
+        model.add_rule(Rule("1.0: Knows(A, B) & Prior('0') -> Trusts(A, B)", squared = squared))
+        model.add_rule(Rule("1.0: Knows(A, B) & Trusts(A, B) -> Prior('0')", squared = squared))
 
-    model.add_rule(Rule("1.0: Knows(A, B) & SameTastes(A, B) & (A != B) -> Trusts(A, B) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & !SameTastes(A, B) & (A != B) -> !Trusts(A, B) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(A, C) & Trusts(A, B) & SameTastes(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, B) & Knows(A, C) & !Trusts(A, B) & SameTastes(B, C) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, C) & Knows(B, C) & Trusts(A, C) & SameTastes(A, B) & (A != B) & (B != C) & (A != C) -> Trusts(B, C) ^2"))
-    model.add_rule(Rule("1.0: Knows(A, C) & Knows(B, C) & !Trusts(A, C) & SameTastes(A, B) & (A != B) & (B != C) & (A != C) -> !Trusts(B, C) ^2"))
+    model.add_rule(Rule("1.0: Knows(A, B) & SameTastes(A, B) & (A != B) -> Trusts(A, B)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & !SameTastes(A, B) & (A != B) -> !Trusts(A, B)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(A, C) & Trusts(A, B) & SameTastes(B, C) & (A != B) & (B != C) & (A != C) -> Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, B) & Knows(A, C) & !Trusts(A, B) & SameTastes(B, C) & (A != B) & (B != C) & (A != C) -> !Trusts(A, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, C) & Knows(B, C) & Trusts(A, C) & SameTastes(A, B) & (A != B) & (B != C) & (A != C) -> Trusts(B, C)", squared = squared))
+    model.add_rule(Rule("1.0: Knows(A, C) & Knows(B, C) & !Trusts(A, C) & SameTastes(A, B) & (A != B) & (B != C) & (A != C) -> !Trusts(B, C)", squared = squared))
 
 def infer(model, data_fold, model_name, dataset):
     add_eval_data(model, data_fold, model_name, dataset)
