@@ -35,40 +35,40 @@ def main():
             for model_name in models :
                 model = makeModel(model_name)
                 if model_name == "balance5" :
-                    balance5rules(model, squared = False)
+                    balance5rules(model, squared = True)
                 elif model_name == "balance5_recip" :
-                    balance5rules(model, recip = True , squared = False )
+                    balance5rules(model, recip = True , squared = True )
                 elif model_name == "balance_extended" :
-                    balance5rules(model, squared = False)
-                    balanceExtended(model, squared = False)
+                    balance5rules(model, squared = True)
+                    balanceExtended(model, squared = True)
                 elif model_name == "balance_extended_recip" :
-                    balance5rules(model, recip = True, squared = False)
-                    balanceExtended(model, squared = False)
+                    balance5rules(model, recip = True, squared = True)
+                    balanceExtended(model, squared = True)
                 elif model_name == "cyclic_balanced" :
-                    cyclic_bal_rules(model, squared = False)
+                    cyclic_bal_rules(model, squared = True)
                 elif model_name == "cyclic_bal_unbal" :
-                    cyclic_bal_rules(model, unbalanced = True, squared = False)
+                    cyclic_bal_rules(model, unbalanced = True, squared = True)
                 elif model_name == "status" :
-                    status_rules(model, squared = False)
+                    status_rules(model, squared = True)
                 elif model_name == "status_inv" :
-                    status_rules(model, inv = True, squared = False)
+                    status_rules(model, inv = True, squared = True)
                 elif model_name == "personality" :
-                    personality_rules(model, squared = False)
+                    personality_rules(model, squared = True)
                 elif model_name == "similarity" and dataset == "film-trust/" :
-                    similarity(model, squared = False)
+                    similarity(model, squared = True)
                 elif model_name == "triad-similarity" and dataset == "film-trust/" :
-                    balance5rules(model, squared = False)
-                    similarity(model, combination = True , squared = False)
+                    balance5rules(model, squared = True)
+                    similarity(model, combination = True , squared = True)
                 elif model_name == "triad-personality" :
-                    balance5rules(model, squared = False)
-                    personality_rules(model, combination = True, squared = False)
+                    balance5rules(model, squared = True)
+                    personality_rules(model, combination = True, squared = True)
                 elif model_name == "personality-similarity" and dataset == "film-trust/" :
-                    similarity(model, combination = True, squared = False)
-                    personality_rules(model, squared = False)
+                    similarity(model, combination = True, squared = True)
+                    personality_rules(model, squared = True)
                 elif model_name == "triad-pers-sim" and dataset == "film-trust/" :
-                    balance5rules(model, squared = False)
-                    similarity(model, combination = True, squared = False)
-                    personality_rules(model, combination = True, squared = False)
+                    balance5rules(model, squared = True)
+                    similarity(model, combination = True, squared = True)
+                    personality_rules(model, combination = True, squared = True)
                 else :
                     continue
 

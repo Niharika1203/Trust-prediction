@@ -71,42 +71,69 @@ def evalute(data_fold, model_name, dataset):
 
         true_out = []
         pred_out = []
-
+        discrete_true_out = []
+        discrete_pred_out = []
         for trustee, trusting, value in y_true :
-            true_out.append(value)
+            if float(value) < 0.5 :
+                true_out.append(float(value))
+                discrete_true_out.append(float(0))
+            else :
+                discrete_true_out.append(float(1))
+                true_out.append(float(value))
             for pred_trustee, pred_trusting, pred_val in y_pred :
                 if pred_trustee == trustee and pred_trusting == trusting :
                     pred_out.append(pred_val)
+                    discrete_pred_out.append(pred_val)
 
         true_out = np.array(true_out, dtype=float)
         pred_out = np.array(pred_out, dtype=float)
-        return (true_out, pred_out)
 
-    obsArr, predArr = readfile(y_true_lines, y_pred_lines)
+        discrete_true_out = np.array(discrete_true_out, dtype=float)
+        discrete_pred_out = np.array(discrete_pred_out, dtype=float)
+        return (true_out, pred_out, discrete_true_out, discrete_pred_out)
+
+    obsArr, predArr , discrete_obs_arr, discrete_pred_arr = readfile(y_true_lines, y_pred_lines)
     psl_mae = metrics.mean_absolute_error(obsArr, predArr)
+
     obs_pred = []
+    discrete_obs_pred = []
+    # print(len(obsArr), len(predArr), len(discrete_obs_arr), len(discrete_pred_arr))
     for i in range(len(obsArr)) :
         obs_pred.append((obsArr[i],predArr[i]))
+        discrete_obs_pred.append((discrete_obs_arr[i], discrete_pred_arr[i]))
 
     obs_pred.sort(key = lambda x : x[0])
+    discrete_obs_pred.sort(key = lambda x : x[0])
+
     observed_arr = []
     predicted_arr = []
     neg_observed_arr = []
     neg_predicted_arr = []
+
+    dis_observed_arr = []
+    dis_predicted_arr = []
+    dis_neg_observed_arr = []
+    dis_neg_predicted_arr = []
+
     for i,j in obs_pred :
         observed_arr.append(i)
         predicted_arr.append(j)
         neg_observed_arr.append(1-i)
         neg_predicted_arr.append(1-j)
+    for i,j in discrete_obs_pred:
+        dis_observed_arr.append(i)
+        dis_predicted_arr.append(j)
+        dis_neg_observed_arr.append(1-i)
+        dis_neg_predicted_arr.append(1-j)
 
-    if dataset == "film-trust/" :
-        psl_auroc = "N/A"
-        positiveAUPRC = "N/A"
-        negativeAUPRC = "N/A"
-    else :
-        psl_auroc = metrics.auc(observed_arr, predicted_arr)
-        positiveAUPRC = metrics.average_precision_score(observed_arr, predicted_arr)
-        negativeAUPRC = metrics.average_precision_score(neg_observed_arr, neg_predicted_arr)
+    # if dataset == "film-trust/" :
+    #     psl_auroc = "N/A"
+    #     positiveAUPRC = "N/A"
+    #     negativeAUPRC = "N/A"
+    # else :
+    psl_auroc = metrics.auc(observed_arr, predicted_arr)
+    positiveAUPRC = metrics.average_precision_score(dis_observed_arr, dis_predicted_arr)
+    negativeAUPRC = metrics.average_precision_score(dis_neg_observed_arr, dis_neg_predicted_arr)
 
     correlation, rank = stats.spearmanr(observed_arr, predicted_arr)
     coef, p = stats.kendalltau(observed_arr, predicted_arr)
