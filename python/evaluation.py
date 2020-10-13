@@ -12,9 +12,9 @@ DATA_DIR = os.path.join('..', 'data/' )
 SPLITS = 8
 num_eval_params = 6 # MAE, AUROC, AUPR, AUPR-, spearman Coeff, kendall tau coeff
 
-datasets = [ "trust-prediction/",  "film-trust/"]
+datasets = [ ("trust-prediction/", True) ,  ("film-trust/", True), ("trust-prediction/", False) ,  ("film-trust/", False) ]
 def main():
-    for dataset in datasets :
+    for dataset ,square in datasets :
         evaluation_dict = {}
 
         for data_fold in range(SPLITS) :
@@ -41,7 +41,7 @@ def main():
                 if evaluation_dict[model][i] != "N/A" :
                     evaluation_dict[model][i] /= SPLITS
 
-        final_output = open( dataset_direc + "result.csv", "w+")
+        final_output = open( dataset_direc + "squared_" + str(square) +"result.csv", "w+")
         fieldnames = [ 'Model Name', 'Average MAE', 'Average AUROC', 'Average AUPR (positive class)','Average AUPR (negative class)', 'Average Spearman Coeff (Rho)', 'Average Kendall Tau Coefficient' ]
         writer = csv.writer(final_output)
         writer.writerow(fieldnames)
@@ -50,9 +50,9 @@ def main():
             row = [model] + out
             writer.writerow(row)
 
-def evalute(data_fold, model_name, dataset):
+def evalute(data_fold, model_name, dataset, square):
     inferred_direc = "/"+ str(data_fold) + "/inferred-predicates/TRUSTS.txt"
-    models_direc = os.path.join(dataset, model_name)
+    models_direc = os.path.join(dataset,"squared_"+str(square), model_name)
     truth_file = open(DATA_DIR + dataset + str(data_fold) + "/eval/trusts_truth.txt", "r+")
     y_true_lines = truth_file.readlines()
     file_pred = open(models_direc + inferred_direc, "r+")
@@ -72,7 +72,7 @@ def evalute(data_fold, model_name, dataset):
         true_out = []
         pred_out = []
         discrete_true_out = []
-        discrete_pred_out = []
+
         for trustee, trusting, value in y_true :
             if float(value) < 0.5 :
                 true_out.append(float(value))
@@ -83,24 +83,23 @@ def evalute(data_fold, model_name, dataset):
             for pred_trustee, pred_trusting, pred_val in y_pred :
                 if pred_trustee == trustee and pred_trusting == trusting :
                     pred_out.append(pred_val)
-                    discrete_pred_out.append(pred_val)
+
 
         true_out = np.array(true_out, dtype=float)
         pred_out = np.array(pred_out, dtype=float)
 
         discrete_true_out = np.array(discrete_true_out, dtype=float)
-        discrete_pred_out = np.array(discrete_pred_out, dtype=float)
-        return (true_out, pred_out, discrete_true_out, discrete_pred_out)
 
-    obsArr, predArr , discrete_obs_arr, discrete_pred_arr = readfile(y_true_lines, y_pred_lines)
+        return (true_out, pred_out, discrete_true_out)
+
+    obsArr, predArr , discrete_obs_arr = readfile(y_true_lines, y_pred_lines)
     psl_mae = metrics.mean_absolute_error(obsArr, predArr)
 
     obs_pred = []
     discrete_obs_pred = []
-    # print(len(obsArr), len(predArr), len(discrete_obs_arr), len(discrete_pred_arr))
     for i in range(len(obsArr)) :
         obs_pred.append((obsArr[i],predArr[i]))
-        discrete_obs_pred.append((discrete_obs_arr[i], discrete_pred_arr[i]))
+        discrete_obs_pred.append((discrete_obs_arr[i], predArr[i]))
 
     obs_pred.sort(key = lambda x : x[0])
     discrete_obs_pred.sort(key = lambda x : x[0])
@@ -113,7 +112,6 @@ def evalute(data_fold, model_name, dataset):
     dis_observed_arr = []
     dis_predicted_arr = []
     dis_neg_observed_arr = []
-    dis_neg_predicted_arr = []
 
     for i,j in obs_pred :
         observed_arr.append(i)
@@ -124,16 +122,10 @@ def evalute(data_fold, model_name, dataset):
         dis_observed_arr.append(i)
         dis_predicted_arr.append(j)
         dis_neg_observed_arr.append(1-i)
-        dis_neg_predicted_arr.append(1-j)
 
-    # if dataset == "film-trust/" :
-    #     psl_auroc = "N/A"
-    #     positiveAUPRC = "N/A"
-    #     negativeAUPRC = "N/A"
-    # else :
     psl_auroc = metrics.auc(observed_arr, predicted_arr)
-    positiveAUPRC = metrics.average_precision_score(dis_observed_arr, dis_predicted_arr)
-    negativeAUPRC = metrics.average_precision_score(dis_neg_observed_arr, dis_neg_predicted_arr)
+    positiveAUPRC = metrics.average_precision_score(dis_observed_arr, predicted_arr)
+    negativeAUPRC = metrics.average_precision_score(dis_neg_observed_arr, neg_predicted_arr)
 
     correlation, rank = stats.spearmanr(observed_arr, predicted_arr)
     coef, p = stats.kendalltau(observed_arr, predicted_arr)

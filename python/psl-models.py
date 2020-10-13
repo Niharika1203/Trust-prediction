@@ -21,9 +21,10 @@ ADDITIONAL_CLI_OPTIONS = [
      '--postgres'
 ]
 # "film-trust/", "trust-prediction/"
-datasets = [ "trust-prediction/",  "film-trust/"]
+datasets = [ ("trust-prediction/", True) ,  ("film-trust/", True), ("trust-prediction/", False) ,  ("film-trust/", False) ]
+
 def main():
-    for dataset in datasets :
+    for dataset, square in datasets :
         evaluation_dict = {}
 
         for data_fold in range(SPLITS) :
@@ -35,40 +36,40 @@ def main():
             for model_name in models :
                 model = makeModel(model_name)
                 if model_name == "balance5" :
-                    balance5rules(model, squared = True)
+                    balance5rules(model, squared = square)
                 elif model_name == "balance5_recip" :
-                    balance5rules(model, recip = True , squared = True )
+                    balance5rules(model, recip = True , squared = square )
                 elif model_name == "balance_extended" :
-                    balance5rules(model, squared = True)
-                    balanceExtended(model, squared = True)
+                    balance5rules(model, squared = square)
+                    balanceExtended(model, squared = square)
                 elif model_name == "balance_extended_recip" :
-                    balance5rules(model, recip = True, squared = True)
-                    balanceExtended(model, squared = True)
+                    balance5rules(model, recip = True, squared = square)
+                    balanceExtended(model, squared = square)
                 elif model_name == "cyclic_balanced" :
-                    cyclic_bal_rules(model, squared = True)
+                    cyclic_bal_rules(model, squared = square)
                 elif model_name == "cyclic_bal_unbal" :
-                    cyclic_bal_rules(model, unbalanced = True, squared = True)
+                    cyclic_bal_rules(model, unbalanced = True, squared = square)
                 elif model_name == "status" :
-                    status_rules(model, squared = True)
+                    status_rules(model, squared = square)
                 elif model_name == "status_inv" :
-                    status_rules(model, inv = True, squared = True)
+                    status_rules(model, inv = True, squared = square)
                 elif model_name == "personality" :
-                    personality_rules(model, squared = True)
+                    personality_rules(model, squared = square)
                 elif model_name == "similarity" and dataset == "film-trust/" :
-                    similarity(model, squared = True)
+                    similarity(model, squared = square)
                 elif model_name == "triad-similarity" and dataset == "film-trust/" :
-                    balance5rules(model, squared = True)
-                    similarity(model, combination = True , squared = True)
+                    balance5rules(model, squared = square)
+                    similarity(model, combination = True , squared = square)
                 elif model_name == "triad-personality" :
-                    balance5rules(model, squared = True)
-                    personality_rules(model, combination = True, squared = True)
+                    balance5rules(model, squared = square)
+                    personality_rules(model, combination = True, squared = square)
                 elif model_name == "personality-similarity" and dataset == "film-trust/" :
-                    similarity(model, combination = True, squared = True)
-                    personality_rules(model, squared = True)
+                    similarity(model, combination = True, squared = square)
+                    personality_rules(model, squared = square)
                 elif model_name == "triad-pers-sim" and dataset == "film-trust/" :
-                    balance5rules(model, squared = True)
-                    similarity(model, combination = True, squared = True)
-                    personality_rules(model, combination = True, squared = True)
+                    balance5rules(model, squared = square)
+                    similarity(model, combination = True, squared = square)
+                    personality_rules(model, combination = True, squared = square)
                 else :
                     continue
 
@@ -87,7 +88,7 @@ def main():
                 # Inference
                 results = infer(model, str(data_fold) , model_name, dataset)
 
-                write_results(results, model, model_name, str(data_fold), dataset)
+                write_results(results, model, model_name, str(data_fold), dataset, square)
 
 def makeModel(model_name, addPrior = True, sim = False):
     model = Model(model_name)
@@ -110,14 +111,14 @@ def makeModel(model_name, addPrior = True, sim = False):
 
     return model
 
-def add_learn_data(model, data_fold, model_name, dataset):
+def add_learn_data(model, data_fold, model_name, dataset ):
     _add_data('learn', model, data_fold, model_name, dataset)
 
-def add_eval_data(model, data_fold, model_name, dataset):
+def add_eval_data(model, data_fold, model_name, dataset ):
     _add_data('eval', model, data_fold, model_name, dataset )
 
-def _add_data(split, model, data_fold, model_name, dataset):
-    split_data_dir = os.path.join(DATA_DIR,dataset, data_fold, split)
+def _add_data(split, model, data_fold, model_name, dataset ):
+    split_data_dir = os.path.join(DATA_DIR, dataset, data_fold, split)
     for predicate in model.get_predicates().values():
         predicate.clear_data()
 
@@ -147,12 +148,12 @@ def _add_data(split, model, data_fold, model_name, dataset):
         model.get_predicate('SameTastes').add_data_file(Partition.TARGETS, path)
 
 def learn(model, data_fold, model_name, dataset):
-    add_learn_data(model, data_fold, model_name, dataset)
+    add_learn_data(model, data_fold, model_name, dataset )
     model.learn(additional_cli_options = ADDITIONAL_CLI_OPTIONS, psl_config = ADDITIONAL_PSL_OPTIONS)
     return model
 
-def write_results(results, model, model_name, data_fold, dataset):
-    out_dir = dataset + "/" + model_name + "/"+ data_fold + '/inferred-predicates'
+def write_results(results, model, model_name, data_fold, dataset, square):
+    out_dir = dataset + "/squared_" + str(square) + "/" + model_name + "/"+ data_fold + '/inferred-predicates'
     os.makedirs(out_dir, exist_ok = True)
 
     for predicate in model.get_predicates().values():
