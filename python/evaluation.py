@@ -25,7 +25,7 @@ def main():
             for model_name in models :
                 if dataset == "trust-prediction/" and model_name in set(["similarity", "triad-similarity", "personality-similarity", "triad-pers-sim"]) :
                     continue
-                outList = evalute( str(data_fold) , model_name, dataset)
+                outList = evaluate( str(data_fold) , model_name, dataset, square) 
                 if model_name not in evaluation_dict :
                     evaluation_dict[model_name] = [0] * num_eval_params
                 for i in range(num_eval_params) :
@@ -50,7 +50,7 @@ def main():
             row = [model] + out
             writer.writerow(row)
 
-def evalute(data_fold, model_name, dataset, square):
+def evaluate(data_fold, model_name, dataset, square):
     inferred_direc = "/"+ str(data_fold) + "/inferred-predicates/TRUSTS.txt"
     models_direc = os.path.join(dataset,"squared_"+str(square), model_name)
     truth_file = open(DATA_DIR + dataset + str(data_fold) + "/eval/trusts_truth.txt", "r+")
