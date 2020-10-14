@@ -1,17 +1,25 @@
 """Rewrite of the previous evaluation.py"""
 
+from datetime import datetime
 from pathlib import Path
+
 import pandas as pd
-from sklearn import metrics
 from scipy import stats
+from sklearn import metrics
 
 
 DATASETS = [
     ("FilmTrust", "SBP-2013"),
     ("Epinions", "JMLR-2017")
 ]
+
 NUM_SPLITS = 8  # TODO: This may have to change if we use other papers' datasets
-RULE_TYPES = ["Linear", "Quadratic"]
+
+RULE_TYPES = [
+    "Linear",
+    "Quadratic"
+]
+
 MODELS = [
     "balance5",
     "balance5_recip",
@@ -28,6 +36,7 @@ MODELS = [
     "personality-similarity",
     "triad-pers-sim"
 ]
+
 
 FILMTRUST_SPECIFIC = {"similarity", "triad-similarity", "personality-similarity", "triad-pers-sim"}
 RESULTS_DIR = Path(__file__).parent.absolute()
@@ -87,21 +96,55 @@ def main():
                         eval_dict["AUC-ROC"].append(None)
                         eval_dict["AU-PRC Positive Class"].append(None)
                         eval_dict["AU-PRC Negative Class"].append(None)
-    complete_evaluation = pd.DataFrame(eval_dict).sort_values(["dataset", "predicate_source", "Model", "rule_type", "split"]).reset_index(drop=True)
+    complete_evaluation = pd.DataFrame(eval_dict)
     group_eval(complete_evaluation)
 
 
 def group_eval(complete_data):
-    model_groups = dict(tuple(complete_data.groupby(["dataset", "predicate_source", "rule_type"])))
-    for model_group in model_groups:
-        data = model_groups[model_group]
-        num_splits = len(data["split"].unique())
-        statistics = compute_stats(data)
-        eval_dir = RESULTS_DIR / "evaluation"
-        eval_dir.mkdir(exist_ok=True, parents=True)
-        fname = eval_dir / ("_".join(model_group) + '.csv')
-        statistics.to_csv(fname, index=False)
-        print("Saved: ", fname)
+    model_groups = dict(tuple(complete_data.groupby(["dataset", "predicate_source", "rule_type"], sort=False)))
+    current_line = 0
+    title_spacing = 1
+    dataset_spacing = 2
+    title_lines = []
+    dataset_widths = []
+
+    timestamp = datetime.now().strftime("%d-%b-%y, %-I.%M %p")
+    sheet_name = f"Evaluation ({timestamp})"
+
+    eval_dir = RESULTS_DIR / "evaluation"
+    eval_dir.mkdir(exist_ok=True, parents=True)
+    fname = eval_dir / "evaluation.xlsx"
+    with pd.ExcelWriter(fname) as writer:
+        for model_group in model_groups:
+            dataset, predicate_source, rule_type = model_group
+            print(f"Aggregating:", dataset, predicate_source, rule_type)
+            data = model_groups[model_group]
+            num_splits = len(data["split"].unique())
+
+            statistics = compute_stats(data)
+
+            title_line = current_line
+            current_line += title_spacing
+            width = len(statistics.columns)
+            height = len(statistics) + 1
+
+            title_lines.append(title_line)
+            dataset_widths.append(width)
+            statistics.to_excel(writer, sheet_name=sheet_name, startrow=current_line, index=False, float_format="%.4f", na_rep='N/A')
+
+            workbook = writer.book
+            worksheet = writer.sheets[sheet_name]
+
+            worksheet.merge_range(
+                title_line, 0, title_line, width-1,
+                f"{dataset}: Average of {num_splits} splits from {predicate_source} (with {rule_type} rules)"
+            )
+            current_line += height + dataset_spacing
+        big_font = workbook.add_format({'font_size': 15})
+        for line in title_lines:
+            worksheet.set_row(line, None, big_font)
+        for col in range(max(dataset_widths)):
+            worksheet.set_column(col, col, 25)
 
 
 def compute_stats(data):
