@@ -88,8 +88,7 @@ def main():
                         eval_dict["AU-PRC Positive Class"].append(None)
                         eval_dict["AU-PRC Negative Class"].append(None)
     evaluation = pd.DataFrame(eval_dict).sort_values(["dataset", "predicate_source", "Model", "rule_type", "split"]).reset_index(drop=True)
-    print(evaluation)
-
+    evaluation.to_csv("complete_evaluation.csv", index=False)
 
 
 if __name__ == '__main__':
