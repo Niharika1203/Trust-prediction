@@ -2,6 +2,8 @@
 
 from pathlib import Path
 import pandas as pd
+from sklearn import metrics
+from scipy import stats
 
 
 DATASETS = [
@@ -42,12 +44,12 @@ def main():
         "rule_type": [],
         "split": [],
         "MAE": [],
-        "MSE": [],
+        # "MSE": [],
+        "Spearman Correlation": [],
+        "Kendall Correlation": [],
+        "AUC-ROC": [],
         "AU-PRC Positive Class": [],
         "AU-PRC Negative Class": [],
-        "Spearman Correlation": [],
-        "Kendall Coefficient": [],
-        "AUC-ROC": []
     }
     for dataset, predicate_source in DATASETS:
         # TODO: Change folder names output by psl-models.py to match dataset names
@@ -73,11 +75,18 @@ def main():
                     eval_dict["Model"].append(model)
                     eval_dict["rule_type"].append(rule_type)
                     eval_dict["split"].append(split)
-                    
-    # for k in ["MAE", "MSE", "AU-PRC Positive Class", "AU-PRC Negative Class", "Spearman Correlation", "Kendall Coefficient", "AUC-ROC"]:
-    #     eval_dict[k] = [None]*len(eval_dict["dataset"])
-    # print(eval_dict)
-    # print(list(len(eval_dict[k]) for k in eval_dict))
+                    eval_dict["MAE"].append(metrics.mean_absolute_error(truth_array, prediction_array))
+                    eval_dict["Spearman Correlation"].append(stats.spearmanr(truth_array, prediction_array)[0])
+                    eval_dict["Kendall Correlation"].append(stats.kendalltau(truth_array, prediction_array)[0])
+                    # TODO: For now, don't try to threshold FilmTrust to get these scores
+                    if dataset == 'Epinions':
+                        eval_dict["AUC-ROC"].append(metrics.roc_auc_score(truth_array, prediction_array))
+                        eval_dict["AU-PRC Positive Class"].append(metrics.average_precision_score(truth_array, prediction_array))
+                        eval_dict["AU-PRC Negative Class"].append(metrics.average_precision_score(1-truth_array, 1-prediction_array))
+                    else:
+                        eval_dict["AUC-ROC"].append(None)
+                        eval_dict["AU-PRC Positive Class"].append(None)
+                        eval_dict["AU-PRC Negative Class"].append(None)
     evaluation = pd.DataFrame(eval_dict).sort_values(["dataset", "predicate_source", "Model", "rule_type", "split"]).reset_index(drop=True)
     print(evaluation)
 
