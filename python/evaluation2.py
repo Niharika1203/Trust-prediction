@@ -63,7 +63,7 @@ def main():
                 if dataset == "Epinions" and model in FILMTRUST_SPECIFIC:
                     continue
                 for rule_type in RULE_TYPES:
-                    print(dataset, split, model, rule_type)
+                    print("Processing:", dataset, split, rule_type, model)
                     rule_type_folder = "squared_True" if (rule_type == "Quadratic") else "squared_False"  # TODO: Fix these to reflect rule type names
                     predicted_file = RESULTS_DIR / data_folder_name / rule_type_folder / model / str(split) / "inferred-predicates" / "TRUSTS.txt"
                     predicted = pd.read_csv(predicted_file, names=["u1", "u2", "predicted"], sep='\t')
@@ -87,8 +87,9 @@ def main():
                         eval_dict["AUC-ROC"].append(None)
                         eval_dict["AU-PRC Positive Class"].append(None)
                         eval_dict["AU-PRC Negative Class"].append(None)
-    evaluation = pd.DataFrame(eval_dict).sort_values(["dataset", "predicate_source", "Model", "rule_type", "split"]).reset_index(drop=True)
-    evaluation.to_csv("complete_evaluation.csv", index=False)
+    complete_evaluation = pd.DataFrame(eval_dict).sort_values(["dataset", "predicate_source", "Model", "rule_type", "split"]).reset_index(drop=True)
+    complete_evaluation.to_csv("complete_evaluation.csv", index=False)
+    print(complete_evaluation)
 
 
 if __name__ == '__main__':
