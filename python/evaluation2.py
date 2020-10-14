@@ -99,7 +99,7 @@ def group_eval(complete_data):
         statistics = compute_stats(data)
         eval_dir = RESULTS_DIR / "evaluation"
         eval_dir.mkdir(exist_ok=True, parents=True)
-        fname = eval_dir / ("_".join(model_group) + '.txt')
+        fname = eval_dir / ("_".join(model_group) + '.csv')
         statistics.to_csv(fname, index=False)
         print("Saved: ", fname)
 
