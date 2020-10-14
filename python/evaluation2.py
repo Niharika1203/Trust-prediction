@@ -7,8 +7,8 @@ from scipy import stats
 
 
 DATASETS = [
-    ("FilmTrust", "SBP 2013"),
-    ("Epinions", "JMLR 2017")
+    ("FilmTrust", "SBP-2013"),
+    ("Epinions", "JMLR-2017")
 ]
 NUM_SPLITS = 8  # TODO: This may have to change if we use other papers' datasets
 RULE_TYPES = ["Linear", "Quadratic"]
@@ -88,8 +88,59 @@ def main():
                         eval_dict["AU-PRC Positive Class"].append(None)
                         eval_dict["AU-PRC Negative Class"].append(None)
     complete_evaluation = pd.DataFrame(eval_dict).sort_values(["dataset", "predicate_source", "Model", "rule_type", "split"]).reset_index(drop=True)
-    complete_evaluation.to_csv("complete_evaluation.csv", index=False)
-    print(complete_evaluation)
+    group_eval(complete_evaluation)
+
+
+def group_eval(complete_data):
+    model_groups = dict(tuple(complete_data.groupby(["dataset", "predicate_source", "rule_type"])))
+    for model_group in model_groups:
+        data = model_groups[model_group]
+        num_splits = len(data["split"].unique())
+        statistics = compute_stats(data)
+        eval_dir = RESULTS_DIR / "evaluation"
+        eval_dir.mkdir(exist_ok=True, parents=True)
+        fname = eval_dir / ("_".join(model_group) + '.txt')
+        statistics.to_csv(fname, index=False)
+        print("Saved: ", fname)
+
+
+def compute_stats(data):
+    mean = data.groupby(["Model"], sort=False).mean().drop(columns=["split"]).add_prefix("Average ").reset_index()
+    standard_deviation = data.groupby(["Model"], sort=False).std().drop(columns=["split"]).add_suffix(" (STD)").reset_index()
+    model = mean["Model"]
+    mean = mean.drop(columns=["Model"])
+    standard_deviation = standard_deviation.drop(columns=["Model"])
+    statistics = pd.concat([mean, standard_deviation], axis=1)[list(interleave([mean, standard_deviation]))]
+    statistics.insert(0, 'Model', model)
+    return statistics
+
+
+def interleave(seqs):
+    """ Interleave a sequence of sequences
+
+    >>> list(interleave([[1, 2], [3, 4]]))
+    [1, 3, 2, 4]
+
+    >>> ''.join(interleave(('ABC', 'XY')))
+    'AXBYC'
+
+    Both the individual sequences and the sequence of sequences may be infinite
+
+    Returns a lazy iterator
+    """
+    import functools
+    import itertools
+    import operator
+    # Taken from toolz
+    iters = itertools.cycle(map(iter, seqs))
+    while True:
+        try:
+            for itr in iters:
+                yield next(itr)
+            return
+        except StopIteration:
+            predicate = functools.partial(operator.is_not, itr)
+            iters = itertools.cycle(itertools.takewhile(predicate, iters))
 
 
 if __name__ == '__main__':

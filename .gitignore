@@ -8,3 +8,4 @@ predicate_mapping.txt
 *result.csv
 old_eval.py
 complete_evaluation.csv
+evaluation/
