@@ -32,21 +32,24 @@ def interleave(seqs):
 
 
 def compute_stats(data):
-    model_groups = data.groupby(["Model"], sort=False, as_index=False)
-    mean = model_groups.mean()
-    standard_deviation = model_groups.std().add_suffix(" (STD)")
-    model = mean["model"]
-    mean = mean.drop(columns=["model"])
-    standard_deviation = std.drop(columns=["model"])
+    mean = data.groupby(["Model"], sort=False).mean().drop(columns=["split"]).add_prefix("Average ").reset_index()
+    standard_deviation = data.groupby(["Model"], sort=False).std().drop(columns=["split"]).add_suffix(" (STD)").reset_index()
+    model = mean["Model"]
+    mean = mean.drop(columns=["Model"])
+    standard_deviation = standard_deviation.drop(columns=["Model"])
     statistics = pd.concat([mean, standard_deviation], axis=1)[list(interleave([mean, standard_deviation]))]
-    statistics.insert(0, 'model', model)
+    statistics.insert(0, 'Model', model)
     return statistics
 
 
 def postprocess():
     complete_data = pd.read_csv("complete_evaluation.csv")
     model_groups = dict(tuple(complete_data.groupby(["dataset", "predicate_source", "rule_type"])))
-    print(model_groups)
+    for model_group in model_groups:
+        data = model_groups[model_group]
+        num_splits = len(data["split"].unique())
+        statistics = compute_stats(data)
+        print(statistics.columns)
 
 
 if __name__ == '__main__':
