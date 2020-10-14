@@ -10,7 +10,7 @@ import csv
 DATA_DIR = os.path.join('..', 'data/' )
 
 SPLITS = 8
-num_eval_params = 6 # MAE, AUROC, AUPR, AUPR-, spearman Coeff, kendall tau coeff
+num_eval_params = 7 # MAE, Standard Deviation, AUROC, AUPR, AUPR-, spearman Coeff, kendall tau coeff
 
 datasets = [ ("trust-prediction/", True) ,  ("film-trust/", True), ("trust-prediction/", False) ,  ("film-trust/", False) ]
 def main():
@@ -25,7 +25,7 @@ def main():
             for model_name in models :
                 if dataset == "trust-prediction/" and model_name in set(["similarity", "triad-similarity", "personality-similarity", "triad-pers-sim"]) :
                     continue
-                outList = evaluate( str(data_fold) , model_name, dataset, square) 
+                outList = evaluate( str(data_fold) , model_name, dataset, square)
                 if model_name not in evaluation_dict :
                     evaluation_dict[model_name] = [0] * num_eval_params
                 for i in range(num_eval_params) :
@@ -42,7 +42,7 @@ def main():
                     evaluation_dict[model][i] /= SPLITS
 
         final_output = open( dataset_direc + "squared_" + str(square) +"result.csv", "w+")
-        fieldnames = [ 'Model Name', 'Average MAE', 'Average AUROC', 'Average AUPR (positive class)','Average AUPR (negative class)', 'Average Spearman Coeff (Rho)', 'Average Kendall Tau Coefficient' ]
+        fieldnames = [ 'Model Name', 'Average MAE', ' Average Standard Deviation', 'Average AUROC', 'Average AUPR (positive class)','Average AUPR (negative class)', 'Average Spearman Coeff (Rho)', 'Average Kendall Tau Coefficient' ]
         writer = csv.writer(final_output)
         writer.writerow(fieldnames)
 
@@ -94,7 +94,7 @@ def evaluate(data_fold, model_name, dataset, square):
 
     obsArr, predArr , discrete_obs_arr = readfile(y_true_lines, y_pred_lines)
     psl_mae = metrics.mean_absolute_error(obsArr, predArr)
-
+    standard_dev = np.std(predArr)
     obs_pred = []
     discrete_obs_pred = []
     for i in range(len(obsArr)) :
@@ -135,10 +135,10 @@ def evaluate(data_fold, model_name, dataset, square):
     eval_file = open(evalDir + "/evaluation_result.csv", "w+")
     eval_file.write("Results for "+ model_name + "\n")
 
-    fieldnames = [ 'Model Name', 'Average MAE', 'Average AUROC', 'Average AUPR (positive class)','Average AUPR (negative class)', 'Average Spearman Coeff (Rho)', 'Average Kendall Tau Coefficient' ]
+    fieldnames = [ 'Model Name', 'Average MAE', 'Standard Deviation',  'Average AUROC', 'Average AUPR (positive class)','Average AUPR (negative class)', 'Average Spearman Coeff (Rho)', 'Average Kendall Tau Coefficient' ]
     csv_writer = csv.writer(eval_file)
     csv_writer.writerow(fieldnames)
-    evalList = [psl_mae] + [psl_auroc] + [positiveAUPRC] + [negativeAUPRC] + [correlation] + [coef]
+    evalList = [psl_mae] +[standard_dev] + [psl_auroc] + [positiveAUPRC] + [negativeAUPRC] + [correlation] + [coef]
     csv_writer.writerow([model_name] + evalList)
 
     return evalList
