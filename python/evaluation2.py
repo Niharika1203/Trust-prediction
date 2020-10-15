@@ -115,10 +115,8 @@ def group_eval(complete_data):
     eval_dir.mkdir(exist_ok=True, parents=True)
     fname = eval_dir / "evaluation.xlsx"
     with pd.ExcelWriter(fname) as writer:
-        for model_group in model_groups:
-            dataset, predicate_source, rule_type = model_group
+        for (dataset, predicate_source, rule_type), data in model_groups.items():
             print(f"Aggregating:", dataset, predicate_source, rule_type)
-            data = model_groups[model_group]
             num_splits = len(data["split"].unique())
 
             statistics = compute_stats(data)
