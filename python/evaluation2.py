@@ -145,6 +145,7 @@ def group_eval(complete_data):
             worksheet.set_row(line, None, big_font)
         for col in range(max(dataset_widths)):
             worksheet.set_column(col, col, 25)
+    print(f"Wrote:", fname)
 
 
 def compute_stats(data):
