@@ -1,147 +1,186 @@
-#!/usr/bin/env python3
+"""Rewrite of the previous evaluation.py"""
 
-from sklearn import metrics
+from datetime import datetime
+from pathlib import Path
+
+import pandas as pd
 from scipy import stats
-import collections
-import numpy as np
-import os
-import csv
+from sklearn import metrics
 
-DATA_DIR = os.path.join('..', 'data/' )
 
-SPLITS = 8
-num_eval_params = 7 # MAE, Standard Deviation, AUROC, AUPR, AUPR-, spearman Coeff, kendall tau coeff
+DATASETS = [
+    ("FilmTrust", "SBP-2013"),
+    ("Epinions", "JMLR-2017")
+]
 
-datasets = [ ("trust-prediction/", True) ,  ("film-trust/", True), ("trust-prediction/", False) ,  ("film-trust/", False) ]
+NUM_SPLITS = 8  # TODO: This may have to change if we use other papers' datasets
+
+RULE_TYPES = [
+    "Linear",
+    "Quadratic"
+]
+
+MODELS = [
+    "balance5",
+    "balance5_recip",
+    "balance_extended",
+    "balance_extended_recip",
+    "status" ,
+    "status_inv" ,
+    "personality",
+    "cyclic_balanced",
+    "cyclic_bal_unbal",
+    "triad-personality",
+    "similarity",
+    "triad-similarity",
+    "personality-similarity",
+    "triad-pers-sim"
+]
+
+
+FILMTRUST_SPECIFIC = {"similarity", "triad-similarity", "personality-similarity", "triad-pers-sim"}
+RESULTS_DIR = Path(__file__).parent.absolute()
+DATA_DIR = RESULTS_DIR.parent / "data"
+
+
+
 def main():
-    for dataset ,square in datasets :
-        evaluation_dict = {}
-
-        for data_fold in range(SPLITS) :
-            models = [ "balance5", "balance5_recip", "balance_extended", "balance_extended_recip",
-              "status" , "status_inv" , "personality", "cyclic_balanced" , "cyclic_bal_unbal" , "similarity",
-              "triad-similarity", "triad-personality", "personality-similarity", "triad-pers-sim" ]
-
-            for model_name in models :
-                if dataset == "trust-prediction/" and model_name in set(["similarity", "triad-similarity", "personality-similarity", "triad-pers-sim"]) :
+    # Capitalize fields that will be kept in the final document as columns
+    eval_dict = {
+        "dataset": [],
+        "predicate_source": [],
+        "Model": [],
+        "rule_type": [],
+        "split": [],
+        "MAE": [],
+        # "MSE": [],
+        "Spearman Correlation": [],
+        "Kendall Correlation": [],
+        "AUC-ROC": [],
+        "AU-PRC Positive Class": [],
+        "AU-PRC Negative Class": [],
+    }
+    for dataset, predicate_source in DATASETS:
+        # TODO: Change folder names output by psl-models.py to match dataset names
+        # TODO: Add Epinions predicates from SBP, make that part of folder name
+        data_folder_name = 'film-trust' if (dataset == 'FilmTrust') else 'trust-prediction'
+        for split in range(NUM_SPLITS):
+            truth_file = DATA_DIR / data_folder_name / str(split) / "eval" / "trusts_truth.txt"
+            truth = pd.read_csv(truth_file, names=["u1", "u2", "truth"], sep='\t')
+            truth_array = truth["truth"].to_numpy()
+            for model in MODELS:
+                if dataset == "Epinions" and model in FILMTRUST_SPECIFIC:
                     continue
-                outList = evaluate( str(data_fold) , model_name, dataset, square)
-                if model_name not in evaluation_dict :
-                    evaluation_dict[model_name] = [0] * num_eval_params
-                for i in range(num_eval_params) :
-                    if outList[i] == "N/A" :
-                        evaluation_dict[model_name][i]  = outList[i]
-                    else :
-                        evaluation_dict[model_name][i] += outList[i]
+                for rule_type in RULE_TYPES:
+                    print("Processing:", dataset, split, rule_type, model)
+                    rule_type_folder = "squared_True" if (rule_type == "Quadratic") else "squared_False"  # TODO: Fix these to reflect rule type names
+                    predicted_file = RESULTS_DIR / data_folder_name / rule_type_folder / model / str(split) / "inferred-predicates" / "TRUSTS.txt"
+                    predicted = pd.read_csv(predicted_file, names=["u1", "u2", "predicted"], sep='\t')
+                    # Sort predictions by order of truth and transform both to arrays for ease of use
+                    data = truth.merge(predicted, on=["u1", "u2"])
+                    prediction_array = data["predicted"].to_numpy()
+                    eval_dict["dataset"].append(dataset)
+                    eval_dict["predicate_source"].append(predicate_source)
+                    eval_dict["Model"].append(model)
+                    eval_dict["rule_type"].append(rule_type)
+                    eval_dict["split"].append(split)
+                    eval_dict["MAE"].append(metrics.mean_absolute_error(truth_array, prediction_array))
+                    eval_dict["Spearman Correlation"].append(stats.spearmanr(truth_array, prediction_array)[0])
+                    eval_dict["Kendall Correlation"].append(stats.kendalltau(truth_array, prediction_array)[0])
+                    
+                    truth_array_threshold = truth_array > 0.5
+                    eval_dict["AUC-ROC"].append(metrics.roc_auc_score(truth_array_threshold, prediction_array))
+                    eval_dict["AU-PRC Positive Class"].append(metrics.average_precision_score(truth_array_threshold, prediction_array))
+                    eval_dict["AU-PRC Negative Class"].append(metrics.average_precision_score(1-truth_array_threshold, 1-prediction_array))
 
-        dataset_direc = os.path.join(dataset)
-
-        for model, lst in evaluation_dict.items() :
-            for i in range(num_eval_params) :
-                if evaluation_dict[model][i] != "N/A" :
-                    evaluation_dict[model][i] /= SPLITS
-
-        final_output = open( dataset_direc + "squared_" + str(square) +"result.csv", "w+")
-        fieldnames = [ 'Model Name', 'Average MAE', ' Average Standard Deviation', 'Average AUROC', 'Average AUPR (positive class)','Average AUPR (negative class)', 'Average Spearman Coeff (Rho)', 'Average Kendall Tau Coefficient' ]
-        writer = csv.writer(final_output)
-        writer.writerow(fieldnames)
-
-        for model, out in evaluation_dict.items() :
-            row = [model] + out
-            writer.writerow(row)
-
-def evaluate(data_fold, model_name, dataset, square):
-    inferred_direc = "/"+ str(data_fold) + "/inferred-predicates/TRUSTS.txt"
-    models_direc = os.path.join(dataset,"squared_"+str(square), model_name)
-    truth_file = open(DATA_DIR + dataset + str(data_fold) + "/eval/trusts_truth.txt", "r+")
-    y_true_lines = truth_file.readlines()
-    file_pred = open(models_direc + inferred_direc, "r+")
-    y_pred_lines = file_pred.readlines()
-
-    def readfile(y_true_lines, y_pred_lines) :
-        y_true = []
-        y_pred = []
-        for line in y_true_lines :
-            trustee , trusting, value = line.split()
-            y_true.append([trustee, trusting, value])
-
-        for line in y_pred_lines :
-            trustee , trusting, value = line.split()
-            y_pred.append([trustee, trusting, value])
-
-        true_out = []
-        pred_out = []
-        discrete_true_out = []
-
-        for trustee, trusting, value in y_true :
-            if float(value) < 0.5 :
-                true_out.append(float(value))
-                discrete_true_out.append(float(0))
-            else :
-                discrete_true_out.append(float(1))
-                true_out.append(float(value))
-            for pred_trustee, pred_trusting, pred_val in y_pred :
-                if pred_trustee == trustee and pred_trusting == trusting :
-                    pred_out.append(pred_val)
+    complete_evaluation = pd.DataFrame(eval_dict)
+    group_eval(complete_evaluation)
 
 
-        true_out = np.array(true_out, dtype=float)
-        pred_out = np.array(pred_out, dtype=float)
+def group_eval(complete_data):
+    model_groups = dict(tuple(complete_data.groupby(["dataset", "predicate_source", "rule_type"], sort=False)))
+    current_line = 0
+    title_spacing = 1
+    dataset_spacing = 2
+    title_lines = []
+    dataset_widths = []
 
-        discrete_true_out = np.array(discrete_true_out, dtype=float)
+    timestamp = datetime.now().strftime("%d-%b-%y %-I.%M %p")
+    sheet_name = f"Evaluation ({timestamp})"
 
-        return (true_out, pred_out, discrete_true_out)
+    eval_dir = RESULTS_DIR / "evaluation"
+    eval_dir.mkdir(exist_ok=True, parents=True)
+    fname = eval_dir / "evaluation.xlsx"
+    with pd.ExcelWriter(fname) as writer:
+        for (dataset, predicate_source, rule_type), data in model_groups.items():
+            print(f"Aggregating:", dataset, predicate_source, rule_type)
+            num_splits = len(data["split"].unique())
 
-    obsArr, predArr , discrete_obs_arr = readfile(y_true_lines, y_pred_lines)
-    psl_mae = metrics.mean_absolute_error(obsArr, predArr)
-    standard_dev = np.std(predArr)
-    obs_pred = []
-    discrete_obs_pred = []
-    for i in range(len(obsArr)) :
-        obs_pred.append((obsArr[i],predArr[i]))
-        discrete_obs_pred.append((discrete_obs_arr[i], predArr[i]))
+            statistics = compute_stats(data)
 
-    obs_pred.sort(key = lambda x : x[0])
-    discrete_obs_pred.sort(key = lambda x : x[0])
+            title_line = current_line
+            current_line += title_spacing
+            width = len(statistics.columns)
+            height = len(statistics) + 1
 
-    observed_arr = []
-    predicted_arr = []
-    neg_observed_arr = []
-    neg_predicted_arr = []
+            title_lines.append(title_line)
+            dataset_widths.append(width)
+            statistics.to_excel(writer, sheet_name=sheet_name, startrow=current_line, index=False, float_format="%.4f", na_rep='N/A')
 
-    dis_observed_arr = []
-    dis_predicted_arr = []
-    dis_neg_observed_arr = []
+            workbook = writer.book
+            worksheet = writer.sheets[sheet_name]
 
-    for i,j in obs_pred :
-        observed_arr.append(i)
-        predicted_arr.append(j)
-        neg_observed_arr.append(1-i)
-        neg_predicted_arr.append(1-j)
-    for i,j in discrete_obs_pred:
-        dis_observed_arr.append(i)
-        dis_predicted_arr.append(j)
-        dis_neg_observed_arr.append(1-i)
+            worksheet.merge_range(
+                title_line, 0, title_line, width-1,
+                f"{dataset}: Average of {num_splits} splits from {predicate_source} (with {rule_type} rules)"
+            )
+            current_line += height + dataset_spacing
+        big_font = workbook.add_format({'font_size': 15})
+        for line in title_lines:
+            worksheet.set_row(line, None, big_font)
+        for col in range(max(dataset_widths)):
+            worksheet.set_column(col, col, 25)
+    print(f"Wrote:", fname)
 
-    psl_auroc = metrics.auc(observed_arr, predicted_arr)
-    positiveAUPRC = metrics.average_precision_score(dis_observed_arr, predicted_arr)
-    negativeAUPRC = metrics.average_precision_score(dis_neg_observed_arr, neg_predicted_arr)
 
-    correlation, rank = stats.spearmanr(observed_arr, predicted_arr)
-    coef, p = stats.kendalltau(observed_arr, predicted_arr)
+def compute_stats(data):
+    mean = data.groupby(["Model"], sort=False).mean().drop(columns=["split"]).add_prefix("Average ").reset_index()
+    standard_deviation = data.groupby(["Model"], sort=False).std().drop(columns=["split"]).add_suffix(" (STD)").reset_index()
+    model = mean["Model"]
+    mean = mean.drop(columns=["Model"])
+    standard_deviation = standard_deviation.drop(columns=["Model"])
+    statistics = pd.concat([mean, standard_deviation], axis=1)[list(interleave([mean, standard_deviation]))]
+    statistics.insert(0, 'Model', model)
+    return statistics
 
-    evalDir = models_direc +"/" + str(data_fold)
-    os.makedirs(evalDir, exist_ok = True)
-    eval_file = open(evalDir + "/evaluation_result.csv", "w+")
-    eval_file.write("Results for "+ model_name + "\n")
 
-    fieldnames = [ 'Model Name', 'Average MAE', 'Standard Deviation',  'Average AUROC', 'Average AUPR (positive class)','Average AUPR (negative class)', 'Average Spearman Coeff (Rho)', 'Average Kendall Tau Coefficient' ]
-    csv_writer = csv.writer(eval_file)
-    csv_writer.writerow(fieldnames)
-    evalList = [psl_mae] +[standard_dev] + [psl_auroc] + [positiveAUPRC] + [negativeAUPRC] + [correlation] + [coef]
-    csv_writer.writerow([model_name] + evalList)
+def interleave(seqs):
+    """ Interleave a sequence of sequences
 
-    return evalList
+    >>> list(interleave([[1, 2], [3, 4]]))
+    [1, 3, 2, 4]
 
-if (__name__ == '__main__') :
+    >>> ''.join(interleave(('ABC', 'XY')))
+    'AXBYC'
+
+    Both the individual sequences and the sequence of sequences may be infinite
+
+    Returns a lazy iterator
+    """
+    import functools
+    import itertools
+    import operator
+    # Taken from toolz
+    iters = itertools.cycle(map(iter, seqs))
+    while True:
+        try:
+            for itr in iters:
+                yield next(itr)
+            return
+        except StopIteration:
+            predicate = functools.partial(operator.is_not, itr)
+            iters = itertools.cycle(itertools.takewhile(predicate, iters))
+
+
+if __name__ == '__main__':
     main()
