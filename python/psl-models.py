@@ -18,7 +18,7 @@ DATA_DIR = os.path.join('..', 'data/' )
 
 SPLITS = 8
 ADDITIONAL_CLI_OPTIONS = [
-     '--postgres'
+     # '--postgres'
 ]
 # "film-trust/", "trust-prediction/"
 datasets = [ ("trust-prediction/", True) ,  ("film-trust/", True), ("trust-prediction/", False) ,  ("film-trust/", False) ]
@@ -149,7 +149,7 @@ def _add_data(split, model, data_fold, model_name, dataset ):
 
 def learn(model, data_fold, model_name, dataset):
     add_learn_data(model, data_fold, model_name, dataset )
-    model.learn(additional_cli_options = ADDITIONAL_CLI_OPTIONS, psl_config = ADDITIONAL_PSL_OPTIONS)
+    model.learn(additional_cli_optons = ADDITIONAL_CLI_OPTIONS, psl_config = ADDITIONAL_PSL_OPTIONS)
     return model
 
 def write_results(results, model, model_name, data_fold, dataset, square):
@@ -256,7 +256,7 @@ def similarity(model, combination = False, squared = True) :
 
 def infer(model, data_fold, model_name, dataset):
     add_eval_data(model, data_fold, model_name, dataset)
-    return model.infer(additional_cli_options = ADDITIONAL_CLI_OPTIONS, psl_config = ADDITIONAL_PSL_OPTIONS)
+    return model.infer(additional_cli_optons = ADDITIONAL_CLI_OPTIONS, psl_config = ADDITIONAL_PSL_OPTIONS)
 
 if (__name__ == '__main__') :
     main()

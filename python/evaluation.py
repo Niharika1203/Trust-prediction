@@ -1,10 +1,10 @@
 from datetime import datetime
 from pathlib import Path
-
+import matplotlib.pyplot as plt
 import pandas as pd
 from scipy import stats
 from sklearn import metrics
-
+import seaborn as sns
 
 DATASETS = [
     ("FilmTrust", "SBP-2013"),
@@ -138,7 +138,6 @@ def main():
     complete_evaluation = pd.DataFrame(eval_dict)
     group_eval(complete_evaluation)
 
-
 def group_eval(complete_data):
     model_groups = dict(tuple(complete_data.groupby(["dataset", "predicate_source", "rule_type"], sort=False)))
     current_line = 0
@@ -160,7 +159,11 @@ def group_eval(complete_data):
 
             statistics = compute_stats(data)
             # statistics = statistics[statistics.columns.drop(list(statistics.filter(regex='Paper.*STD')))]
-
+            # print(type(statistics))
+            # print(statistics.columns)
+            # print(statistics.index)
+            sns.heatmap(statistics[['Average MAE','Average Spearman Correlation', 'Average Kendall Correlation','Average AUC-ROC', 'Average AU-PRC Positive Class','Average AU-PRC Negative Class']], cmap ='RdYlGn', linewidths = 0.30, annot = True)
+            plt.show()
             title_line = current_line
             current_line += title_spacing
             width = len(statistics.columns)
