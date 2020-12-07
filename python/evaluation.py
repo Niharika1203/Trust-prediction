@@ -40,27 +40,8 @@ FILMTRUST_SPECIFIC = {"similarity", "triad-similarity", "personality-similarity"
 RESULTS_DIR = Path(__file__).parent.absolute()
 DATA_DIR = RESULTS_DIR.parent / "data"
 
-# FilmTrust_paper = {
-# "balance5" : {"MAE" : 0.30 , "Spearman Correlation": 0.09, "Kendall Correlation" : 0.07 },
-# "balance_extended" : {"MAE" :0.21 , "Spearman Correlation": 0.18, "Kendall Correlation" : 0.14 },
-# "balance_extended_recip" : {"MAE" : 0.21 , "Spearman Correlation": 0.19, "Kendall Correlation" : 0.14 },
-# "status" : {"MAE" : 0.22 , "Spearman Correlation": 0.14, "Kendall Correlation" : 0.11 },
-# "status_inv" : {"MAE" : 0.22 , "Spearman Correlation": 0.09 , "Kendall Correlation" : 0.07 },
-# "personality" : {"MAE" :0.26, "Spearman Correlation":0.23 , "Kendall Correlation" :0.17 },
-# "similarity" : {"MAE" : 0.22 , "Spearman Correlation": 0.15, "Kendall Correlation" : 0.11 },
-# "triad-similarity" : {"MAE" : 0.21 , "Spearman Correlation": 0.17, "Kendall Correlation" : 0.12 },
-# "triad-personality" : {"MAE" : 0.25, "Spearman Correlation": 0.24, "Kendall Correlation" : 0.18 },
-# "personality-similarity" : {"MAE" : 0.22 , "Spearman Correlation": 0.24, "Kendall Correlation" : 0.18 },
-# "triad-pers-sim" : {"MAE" : 0.22 , "Spearman Correlation": 0.26, "Kendall Correlation" : 0.19 } }
-#
-# Epinions_paper = {
-# "balance_extended" : {"AU-PRC Negative Class" :0.32 } ,
-# "balance_extended_recip" : {"AU-PRC Negative Class" :0.34 },
-# "status" : {"AU-PRC Negative Class" :0.30 } ,
-# "status_inv" : {"AU-PRC Negative Class" :0.28 } }
 
 def main():
-    # Capitalize fields that will be kept in the final document as columns
     eval_dict = {
         "dataset": [],
         "predicate_source": [],
@@ -68,23 +49,15 @@ def main():
         "rule_type": [],
         "split": [],
         "MAE": [],
-        # "MAE in Paper" : [],
         "Spearman Correlation": [],
-        # "Spearman Correlation in Paper" : [],
         "Kendall Correlation": [],
-        # "Kendall Correlation in Paper" : [],
         "AUC-ROC": [],
-        # "AUC-ROC in Paper" : [],
         "AU-PRC Positive Class": [],
-        # "AU-PRC Positive Class in Paper": [],
         "AU-PRC Negative Class": [],
-        # "AU-PRC Negative Class in Paper": [],
     }
     for dataset, predicate_source in DATASETS:
-        # TODO: Change folder names output by psl-models.py to match dataset names
-        # TODO: Add Epinions predicates from SBP, make that part of folder name
+
         data_folder_name = 'film-trust' if (dataset == 'FilmTrust') else 'trust-prediction'
-        # data_dictionary = FilmTrust_paper if (dataset == 'FilmTrust') else Epinions_paper
         for split in range(NUM_SPLITS):
             truth_file = DATA_DIR / data_folder_name / str(split) / "eval" / "trusts_truth.txt"
             truth = pd.read_csv(truth_file, names=["u1", "u2", "truth"], sep='\t')
@@ -97,7 +70,6 @@ def main():
                     rule_type_folder = "squared_True" if (rule_type == "Quadratic") else "squared_False"  # TODO: Fix these to reflect rule type names
                     predicted_file = RESULTS_DIR / data_folder_name / rule_type_folder / model / str(split) / "inferred-predicates" / "TRUSTS.txt"
                     predicted = pd.read_csv(predicted_file, names=["u1", "u2", "predicted"], sep='\t')
-                    # Sort predictions by order of truth and transform both to arrays for ease of use
                     data = truth.merge(predicted, on=["u1", "u2"])
                     prediction_array = data["predicted"].to_numpy()
                     eval_dict["dataset"].append(dataset)
@@ -106,34 +78,13 @@ def main():
                     eval_dict["rule_type"].append(rule_type)
                     eval_dict["split"].append(split)
                     eval_dict["MAE"].append(metrics.mean_absolute_error(truth_array, prediction_array))
-                    # if model in data_dictionary :
-                    #     if "MAE" in data_dictionary[model] :
-                    #         mae_paper = data_dictionary[model]["MAE"]
-                    #     else : mae_paper = None
-                    #     if "Spearman Correlation" in data_dictionary[model] : rho_paper = data_dictionary[model]["Spearman Correlation"]
-                    #     else : rho_paper = None
-                    #     if "Kendall Correlation" in data_dictionary[model] : tau_paper = data_dictionary[model]["Kendall Correlation"]
-                    #     else: tau_paper  = None
-                    #     if "AUC-ROC" in data_dictionary[model] : auroc_paper = data_dictionary[model]["AUC-ROC"]
-                    #     else :auroc_paper  = None
-                    #     if "AU-PRC Positive Class" in data_dictionary[model] : aupr_pos_paper = data_dictionary[model]["AU-PRC Positive Class"]
-                    #     else : aupr_pos_paper  = None
-                    #     if "AU-PRC Negative Class" in data_dictionary[model] : aupr_neg_paper = data_dictionary[model]["AU-PRC Negative Class"]
-                    #     else : aupr_neg_paper = None
 
-                    # eval_dict["MAE in Paper"].append(mae_paper)
-                    # print(mae_paper)
                     eval_dict["Spearman Correlation"].append(stats.spearmanr(truth_array, prediction_array)[0])
-                    # eval_dict["Spearman Correlation in Paper"].append(rho_paper)
                     eval_dict["Kendall Correlation"].append(stats.kendalltau(truth_array, prediction_array)[0])
-                    # eval_dict["Kendall Correlation in Paper"].append(tau_paper)
                     truth_array_threshold = truth_array > 0.5
                     eval_dict["AUC-ROC"].append(metrics.roc_auc_score(truth_array_threshold, prediction_array))
                     eval_dict["AU-PRC Positive Class"].append(metrics.average_precision_score(truth_array_threshold, prediction_array))
                     eval_dict["AU-PRC Negative Class"].append(metrics.average_precision_score(1-truth_array_threshold, 1-prediction_array))
-                    # eval_dict["AUC-ROC in Paper"].append(auroc_paper)
-                    # eval_dict["AU-PRC Positive Class in Paper"].append(aupr_pos_paper)
-                    # eval_dict["AU-PRC Negative Class in Paper"].append(aupr_neg_paper)
 
     complete_evaluation = pd.DataFrame(eval_dict)
     group_eval(complete_evaluation)
@@ -158,10 +109,6 @@ def group_eval(complete_data):
             num_splits = len(data["split"].unique())
 
             statistics = compute_stats(data)
-            # statistics = statistics[statistics.columns.drop(list(statistics.filter(regex='Paper.*STD')))]
-            # print(type(statistics))
-            # print(statistics.columns)
-            # print(statistics.index)
             sns.heatmap(statistics[['Average MAE','Average Spearman Correlation', 'Average Kendall Correlation','Average AUC-ROC', 'Average AU-PRC Positive Class','Average AU-PRC Negative Class']], cmap ='RdYlGn', linewidths = 0.30, annot = True)
             plt.show()
             title_line = current_line
