@@ -5,6 +5,7 @@ import pandas as pd
 from scipy import stats
 from sklearn import metrics
 import seaborn as sns
+from sklearn import preprocessing
 
 DATASETS = [
     ("FilmTrust", "SBP-2013"),
@@ -109,8 +110,26 @@ def group_eval(complete_data):
             num_splits = len(data["split"].unique())
 
             statistics = compute_stats(data)
-            sns.heatmap(statistics[['Average MAE','Average Spearman Correlation', 'Average Kendall Correlation','Average AUC-ROC', 'Average AU-PRC Positive Class','Average AU-PRC Negative Class']], cmap ='RdYlGn', linewidths = 0.30, annot = True)
+            heatmap_df = statistics[['Average MAE','Average Spearman Correlation', 'Average Kendall Correlation','Average AUC-ROC', 'Average AU-PRC Positive Class','Average AU-PRC Negative Class']]
+            heatmap_df_copy = heatmap_df.copy()
+            result = heatmap_df.copy()
+            for feature_name in heatmap_df.columns:
+                max_value = heatmap_df[feature_name].max()
+                min_value = heatmap_df[feature_name].min()
+                result[feature_name] = (heatmap_df[feature_name] - min_value) / (max_value - min_value)
+
+            heatmap_df = result
+            heatmap_df['Average MAE'] = 1 - heatmap_df['Average MAE']
+            title = "Trust Model Evaluation: " + str(dataset) +" "+ str(predicate_source) +" "+ str(rule_type)
+            lst = statistics[['Model']].to_numpy()
+            rows = []
+            for i in lst :
+                rows.append(i[0])
+            # print(rows)
+            heatmap = sns.heatmap(heatmap_df, xticklabels = ['MAE','Spearman', 'Kendall','ROC', 'AUPR(+)','AUPR(-)'], yticklabels = rows,  cmap ='Greys', linewidths = 0.30, annot = heatmap_df_copy, cbar_kws = {'label':'Relative Ranking\n(light = worse, dark = better)' })
+            plt.title(title)
             plt.show()
+
             title_line = current_line
             current_line += title_spacing
             width = len(statistics.columns)
